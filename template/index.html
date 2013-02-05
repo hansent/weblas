@@ -10,7 +10,7 @@
         uniform mat4 uProjectionMatrix;
 
         void main(void) {
-          gl_PointSize = 3.0;
+          gl_PointSize = 1.0;
           gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
         }
     </script>
@@ -20,7 +20,7 @@
         #endif
 
         void main(void) {
-            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+            gl_FragColor = vec4(1.0, 1.0, 1.0, 0.3);
         } 
     </script>
     

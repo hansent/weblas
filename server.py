@@ -5,35 +5,71 @@ import tornado.ioloop
 import tornado.websocket
 import tornado.autoreload
 import laspy.file
+import sys
 import numpy as np
-
-f = laspy.file.File("static/data/serpent.las")
-points = np.vstack((f.x, f.y, f.z)).transpose().ravel()
-buffer_size = len(np.getbuffer(points))
-print "points", len(points)/3, len(points)
-print "buffersize", buffer_size, buffer_size/(8*3), buffer_size/8
 
 
 class SocketConnection(tornado.websocket.WebSocketHandler):
     def open(self):
-        self.offset = 0
-        self.point_size = 3 * 8 # 3 (x,y,z) * int32 (8  bytes)
-        self.chunk_size = self.point_size * 1024
-
-    def send_chunk(self):
-        chunk = np.getbuffer(points, self.offset, self.chunk_size)
-        if len(chunk) == 0:
-            return
-        self.write_message(bytes(chunk), True)
-        self.offset += self.chunk_size
-        io_loop = tornado.ioloop.IOLoop.instance()
-        io_loop.add_callback(self.send_chunk)
+        print "socket opened"
+        pass
 
     def on_message(self, msg):
+        print "message", msg
+        if msg == "init":
+            self.init_stream()
+            self.send_header()
         self.send_chunk()
 
     def on_close(self):
         pass
+
+    def init_stream(self, filename="static/data/serpent.las"):
+        f = laspy.file.File(filename)
+        self.minima = f.header.min
+        self.maxima = f.header.max
+
+        vx = f.x.astype(np.float32)
+        vy = f.y.astype(np.float32)
+        vz = f.z.astype(np.float32)
+        points = np.vstack((vx, vy, vz)).transpose()[0::100]
+        points = (points - self.minima) /10.0 #/ max(self.maxima)
+        self.points = points.ravel().astype(np.float32)
+
+        self.num_points = len(self.points)
+        self.item_size = self.points.dtype.itemsize
+        self.point_size = self.item_size * 3
+        self.buffer_size = self.point_size * self.num_points
+        self.chunk_size = self.point_size * 10000
+        self.offset = 0
+
+    def send_header(self):
+        self.write_message({
+            'num_points': self.num_points,
+            'item_size': self.item_size,
+            'point_size': self.point_size,
+            'buffer_size': self.buffer_size,
+            'chunk_size': self.chunk_size,
+            'minima': self.minima,
+            'maxima': self.maxima,
+        })
+
+    def send_chunk(self):
+        chunk = np.getbuffer(self.points, self.offset, self.chunk_size)
+        print self.points
+        if len(chunk) == 0:
+            return
+        self.write_message(bytes(chunk), True)
+        self.offset += self.chunk_size
+        #io_loop = tornado.ioloop.IOLoop.instance()
+        #io_loop.add_callback(self.send_chunk)
+
+
+
+
+
+
+
 
 
 class IndexHandler(tornado.web.RequestHandler):

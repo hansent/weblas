@@ -42,7 +42,7 @@ var VertexBuffer = Class.extend({
 			mode = gl.TRIANGLES;
 		shader.enable();
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-		gl.vertexAttribPointer(shader.vertexPosition, this.item_size, gl.FLOAT, false, 0, 0);
+		gl.vertexAttribPointer(shader.vertexPosition, this.item_size, gl.FLOAT, false, 12, 0);
 		gl.drawArrays(mode, 0, this.num_items);
 	}
 });
