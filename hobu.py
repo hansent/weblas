@@ -20,6 +20,7 @@ class PointCloud:
         self.connection = psycopg2.connect(self.connect_string)
         
         self.block_table = self.get_block_table()
+        self.schema = self.get_schema()
         
     def get_block_table(self):
         cur = self.connection.cursor()
@@ -57,11 +58,9 @@ class PointCloud:
         xml = 'SELECT SCHEMA from %s where cloud_id=%d' % (self.cloud_table, self.cloud_id)
         cur.execute(xml)
         xml = cur.fetchone()[0]
-
-        f = open('schema.xml', 'wb')
-        f.write(xml)
-        f.close()
-
+        # f = open('schema.xml', 'wb')
+        # f.write(xml)
+        # f.close()
 
         import xml.etree.ElementTree as ET
         root = ET.fromstring(xml)
@@ -70,9 +69,8 @@ class PointCloud:
             dimensions.append(Dimension(child))
         
         return dimensions;
-    schema = property(get_schema)
     
-    def get_numpy_frmt(self, schema):
+    def get_numpy_frmt(self):
         types = {   'int8_t'   : np.int8,
                     'uint8_t'  : np.uint8,
                     'int16_t'  : np.int16,
@@ -84,21 +82,22 @@ class PointCloud:
                     'float'    : np.float32, 
                     'double'   : np.float64}
         format = []
-        for dimension in schema:
+        for dimension in self.schema:
             ntype = types[dimension.interpretation]
             format.append((dimension.name, ntype))
         return format
         
-    def get_blocks(self, format):
+    def get_blocks(self):
+
         cursor = self.connection.cursor()
         query = 'SELECT NUM_POINTS, POINTS from %s where cloud_id = %d ' % (self.block_table, self.cloud_id)
         cursor.execute(query)
         
+        format = self.get_numpy_frmt()
         for row in cursor:
             count = int(row[0])
             blob = row[1]
-            view = bytearray(blob)
-            data = np.frombuffer(view, dtype=format)
+            data = np.frombuffer(blob, dtype=format)
             
             # probably some smart numpy way to get this 
             # slice without a copy and coersion into a list - hobu
@@ -107,19 +106,16 @@ class PointCloud:
             z = np.array([i[2] for i in data])
             
             yield (x, y, z)
+    blocks = property(get_blocks)
 
 if __name__ == '__main__':
     
-
     cloud_table = 'sthelens_cloud'
     cloud_id = 1
     p = PointCloud(cloud_table, cloud_id)
-
         
     bounds = p.bounds
-    schema = p.schema
-    byte_size = sum([int(i.size) for i in schema])
-    frmt = p.get_numpy_frmt(schema)
+    byte_size = sum([int(i.size) for i in p.schema])
 
-    for block in p.get_blocks(frmt):
+    for block in p.blocks:
         print block[0].shape
