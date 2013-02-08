@@ -1,39 +1,50 @@
-import os.path
-import tornado
-import tornado.web
-import tornado.ioloop
-import tornado.websocket
-import tornado.autoreload
-import laspy.file
 import sys
+import logging
+import os.path
 import numpy as np
+import json
+import laspy.file
+
+import tornado
+import tornado.autoreload
+import tornado.ioloop
+import tornado.options
+import tornado.web
+import tornado.websocket
 
 
 class SocketConnection(tornado.websocket.WebSocketHandler):
     def open(self):
-        print "socket opened"
         pass
-
-    def on_message(self, msg):
-        print "message", msg
-        if msg == "init":
-            self.init_stream()
-            self.send_header()
-        self.send_chunk()
 
     def on_close(self):
         pass
 
-    def init_stream(self, filename="static/data/serpent.las"):
+    def on_message(self, msg):
+        msg = json.loads(msg)
+
+        msg_type = msg.get('type')
+        msg_data = msg.get('data')
+        if msg_type == 'load':
+            self.init_stream('data/{}'.format(msg_data['filename']))
+            self.send_header()
+            self.send_chunk()
+        if msg_type == 'next_chunk':
+            self.send_chunk()
+
+    def init_stream(self, filename):
         f = laspy.file.File(filename)
         self.minima = f.header.min
         self.maxima = f.header.max
-
         vx = f.x.astype(np.float32)
         vy = f.y.astype(np.float32)
         vz = f.z.astype(np.float32)
-        points = np.vstack((vx, vy, vz)).transpose()[0::100]
-        points = (points - self.minima) /10.0 #/ max(self.maxima)
+        points = np.vstack((vx, vy, vz)).transpose()[0::25]
+        points = points - self.minima
+        size = [0.5*(self.maxima[i]-self.minima[i]) for i in range(3) ]
+        points = (points - size) * -.01
+        #points = points * (10./self.maxima[i]-self.minima[i])
+
         self.points = points.ravel().astype(np.float32)
 
         self.num_points = len(self.points)
@@ -44,60 +55,53 @@ class SocketConnection(tornado.websocket.WebSocketHandler):
         self.offset = 0
 
     def send_header(self):
-        self.write_message({
+        data = {
             'num_points': self.num_points,
             'item_size': self.item_size,
             'point_size': self.point_size,
             'buffer_size': self.buffer_size,
             'chunk_size': self.chunk_size,
             'minima': self.minima,
-            'maxima': self.maxima,
-        })
+            'maxima': self.maxima
+        }
+        self.send_msg('header', data)
+
+    def send_msg(self, msg_type, data):
+        self.write_message({'type': msg_type, 'data': data})
 
     def send_chunk(self):
         chunk = np.getbuffer(self.points, self.offset, self.chunk_size)
-        print self.points
         if len(chunk) == 0:
             return
         self.write_message(bytes(chunk), True)
         self.offset += self.chunk_size
-        #io_loop = tornado.ioloop.IOLoop.instance()
-        #io_loop.add_callback(self.send_chunk)
 
 
+class StaticFileHandler(tornado.web.StaticFileHandler):
+    def get(self, path, include_body=True):
+        if path is None:
+            path = 'index.html'
+        return super(StaticFileHandler, self).get(path, include_body)
 
-
-
-
-
-
-
-class IndexHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.render("index.html")
-
-
-class DevStaticFileHandler(tornado.web.StaticFileHandler):
     def set_extra_headers(self, path):
-        self.set_header("Cache-control", "no-cache")
+        if self.settings.get('debug'):
+            self.set_header('Cache-control', 'no-cache')
+
 
 
 routes = [
-    (r"/static/(.*)", DevStaticFileHandler, {'path': './static'}),
     (r'/socket', SocketConnection),
-    (r'/', IndexHandler),
+    (r'/css/(.*)', StaticFileHandler, {'path': './css'}),
+    (r"/data/(.*)", StaticFileHandler, {'path': './data'}),
+    (r"/js/(.*)", StaticFileHandler, {'path': './js'}),
+    (r'/(.*\.html)?$', StaticFileHandler, {'path': './'}),
 ]
 
-settings = {
-    'template_path': './template',
-    'debug' : True
-}
 
 if __name__ == '__main__':
-    app = tornado.web.Application(routes, **settings)
-    app.listen(8080)
-    io_loop = tornado.ioloop.IOLoop.instance()
-    tornado.autoreload.start(io_loop)
-    io_loop.start()
+    tornado.options.parse_command_line()
+    tornado.autoreload.start()
+    tornado.web.Application(routes, debug=True).listen(8080)
+    tornado.ioloop.IOLoop.instance().start()
 
 
