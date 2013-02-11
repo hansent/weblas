@@ -11,25 +11,6 @@
     <div id="container"></div>
   </body>
 
-  <script id="vs" type="x-shader/x-vertex">
-    varying float height;
-    void main() {
-      gl_PointSize = 1.0;
-      height = (position.z - (position.z*0.5) ) / 5.0;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1);
-    }
-	</script>
-
-		<script id="fs" type="x-shader/x-fragment">
-      varying float height;
-			void main() {
-        float alpha = smoothstep(1000.0, -1000.0, gl_FragCoord.z / gl_FragCoord.w );
-				gl_FragColor = vec4( 1.0 * height, alpha * (1.0-height), 0.0,  0.5*alpha);
-			}
-
-		</script>
-
-
   <script src="js/lib/jquery-1.9.1.js"></script>
   <script src="js/lib/three.js"></script>
   <script src="js/lib/trackball.js"></script>
@@ -37,6 +18,7 @@
   <script src="js/lib/orbit.js"></script>
   <script src="js/lib/dat.gui.js"></script>
   <script src="js/lasstream.js"></script>
+  <script src="js/util.js"></script>
   <script src="js/main.js"></script>
 
 </html>

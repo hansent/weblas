@@ -5,30 +5,24 @@ var mat = new THREE.ParticleBasicMaterial({
 });
 
 
-material = new THREE.ShaderMaterial({
-  vertexShader: document.getElementById( 'vs' ).textContent,
-  fragmentShader: document.getElementById( 'fs' ).textContent,
- depthTest: false, depthWrite: false,
-						transparent: true 
+var texture = THREE.ImageUtils.loadTexture( "img/colors.png" );
+texture.minFilter = THREE.LinearFilter;
+texture.magFilter = THREE.LinearFilter;
+
+var uniforms = {
+  colortex: { type: "t", value: texture }
+};
+
+material = new GLSLMaterial({
+  shader: "glsl/basic.glsl",
+  uniforms: uniforms,
+  depthTest: false, 
+  depthWrite: false,
+	transparent: true 
 });
 
 
 var init_point_cloud = function(){
-  /*
-  var geom = new THREE.BufferGeometry();
-  geom.attributes = {
-    position: {
-      itemSize: 1,
-      array: new Float32Array([500,500,500]),
-      numItems: 1
-    }
-  };
-  geom.offsets = [{
-    start: 0,
-    count: 1,
-    index: 0
-  }];
-  */
 
   var geom = new THREE.Geometry();
   geom.vertices.push(new THREE.Vector3(0,0,0));
@@ -70,21 +64,6 @@ update_point_cloud = function(points){
   scene.remove(point_cloud);
   point_cloud = new THREE.ParticleSystem(geom, material)
   scene.add(point_cloud);
-  /*
-  point_cloud.geometry.attributes = {
-    position: {
-      itemSize: 3,
-      array: points,
-      numItems: points.length / 3
-    }
-  };
-
-  point_cloud.geometry.offsets = [{
-    start: 0,
-    count: points.length / 3,
-    index: 0
-  }];
-  */
 
 }
 

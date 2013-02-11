@@ -39,7 +39,7 @@ class SocketConnection(tornado.websocket.WebSocketHandler):
         vx = f.x.astype(np.float32)
         vy = f.y.astype(np.float32)
         vz = f.z.astype(np.float32)
-        points = np.vstack((vx, vy, vz)).transpose()[0::25]
+        points = np.vstack((vx, vy, vz)).transpose()[0::15]
         points = points - self.minima
         size = [0.5*(self.maxima[i]-self.minima[i]) for i in range(3) ]
         points = (points - size) * -.01
@@ -91,9 +91,11 @@ class StaticFileHandler(tornado.web.StaticFileHandler):
 
 routes = [
     (r'/socket', SocketConnection),
+    (r"/js/(.*)", StaticFileHandler, {'path': './js'}),
+    (r"/glsl/(.*)", StaticFileHandler, {'path': './glsl'}),
+    (r'/img/(.*)', StaticFileHandler, {'path': './img'}),
     (r'/css/(.*)', StaticFileHandler, {'path': './css'}),
     (r"/data/(.*)", StaticFileHandler, {'path': './data'}),
-    (r"/js/(.*)", StaticFileHandler, {'path': './js'}),
     (r'/(.*\.html)?$', StaticFileHandler, {'path': './'}),
 ]
 

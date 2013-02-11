@@ -1,20 +1,19 @@
-WindowResize	= function(renderer, camera){
-	var callback	= function(){
-		// notify the renderer of the size change
-		renderer.setSize( window.innerWidth, window.innerHeight );
-		// update the camera
-		camera.aspect	= window.innerWidth / window.innerHeight;
-		camera.updateProjectionMatrix();
-	}
-	// bind the resize event
-	window.addEventListener('resize', callback, false);
-	// return .stop() the function to stop watching window resize
-	return {
-		/**
-		 * Stop watching window resize
-		*/
-		stop	: function(){
-			window.removeEventListener('resize', callback);
-		}
-	};
-}
+
+
+var read_file = function(url) {
+  var req = new XMLHttpRequest();
+  req.open("GET", url, false);
+  req.send(null);
+  return (req.status == 200) ? req.responseText : null;
+};
+
+
+var GLSLMaterial = function(parameters){
+  var source = read_file( parameters.shader ).split("--FRAGMENT SHADER--");
+  delete parameters.shader;
+  parameters.vertexShader = source[0];
+  parameters.fragmentShader = source[1];
+  THREE.ShaderMaterial.call( this, parameters );
+};
+
+GLSLMaterial.prototype = Object.create(THREE.ShaderMaterial.prototype);
