@@ -39,7 +39,11 @@ var init_stream = function(){
     var new_part = new Float32Array(data);
     buffer = concatFloat32Array(buffer, new_part);
     update_point_cloud(buffer);
-    sock.send_msg("next_chunk");
+    var _next = function(){
+      sock.send_msg('next_chunk');
+    };
+    setTimeout(_next, 5);
+    
   };
 
 };

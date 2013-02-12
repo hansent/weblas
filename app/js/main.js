@@ -1,6 +1,6 @@
 
 
-var texture = THREE.ImageUtils.loadTexture( "img/colors.png" );
+var texture = THREE.ImageUtils.loadTexture( "img/schema/div_Spectral.png" );
 texture.minFilter = THREE.LinearFilter;
 texture.magFilter = THREE.LinearFilter;
 
@@ -11,8 +11,8 @@ var uniforms = {
 material = new GLSLMaterial({
   shader: "glsl/basic.glsl",
   uniforms: uniforms,
-  depthTest: false, 
-  depthWrite: false,
+  depthTest: true, 
+  depthWrite: true,
 	transparent: true 
 });
 
@@ -51,10 +51,8 @@ update_point_cloud = function(points){
     geom.vertices.push(new THREE.Vector3(x,y,z));
   }
 
-  geom.computeBoundingBox();
-  bb = geom.boundingBox;
-  console.log("bounds", bb);
-
+  //geom.computeBoundingBox();
+  //bb = geom.boundingBox;
 
   scene.remove(point_cloud);
   point_cloud = new THREE.ParticleSystem(geom, material)

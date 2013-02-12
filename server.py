@@ -26,7 +26,7 @@ class SocketConnection(tornado.websocket.WebSocketHandler):
         msg_type = msg.get('type')
         msg_data = msg.get('data')
         if msg_type == 'load':
-            self.init_stream('data/{}'.format(msg_data['filename']))
+            self.init_stream('app/data/{}'.format(msg_data['filename']))
             self.send_header()
             self.send_chunk()
         if msg_type == 'next_chunk':
@@ -39,7 +39,7 @@ class SocketConnection(tornado.websocket.WebSocketHandler):
         vx = f.x.astype(np.float32)
         vy = f.y.astype(np.float32)
         vz = f.z.astype(np.float32)
-        points = np.vstack((vx, vy, vz)).transpose()[0::15]
+        points = np.vstack((vx, vy, vz)).transpose()[::9]
         points = points - self.minima
         size = [0.5*(self.maxima[i]-self.minima[i]) for i in range(3) ]
         points = (points - size) * -.01
@@ -88,15 +88,10 @@ class StaticFileHandler(tornado.web.StaticFileHandler):
             self.set_header('Cache-control', 'no-cache')
 
 
-
 routes = [
     (r'/socket', SocketConnection),
-    (r"/js/(.*)", StaticFileHandler, {'path': './js'}),
-    (r"/glsl/(.*)", StaticFileHandler, {'path': './glsl'}),
-    (r'/img/(.*)', StaticFileHandler, {'path': './img'}),
-    (r'/css/(.*)', StaticFileHandler, {'path': './css'}),
-    (r"/data/(.*)", StaticFileHandler, {'path': './data'}),
-    (r'/(.*\.html)?$', StaticFileHandler, {'path': './'}),
+    (r'/(index\.html)?$', StaticFileHandler, {'path': './app'}),
+    (r'/(.*)$', StaticFileHandler, {'path': './app'}),
 ]
 
 
