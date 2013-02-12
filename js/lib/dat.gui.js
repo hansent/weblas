@@ -1850,15 +1850,18 @@ dat.GUI = dat.gui.GUI = (function (css, saveDialogueContents, styleSheet, contro
       this.__closeButton = document.createElement('div');
       this.__closeButton.innerHTML = GUI.TEXT_CLOSED;
       dom.addClass(this.__closeButton, GUI.CLASS_CLOSE_BUTTON);
-      this.domElement.appendChild(this.__closeButton);
+      
+      
+      //this.domElement.appendChild(this.__closeButton);
 
+      /*
       dom.bind(this.__closeButton, 'click', function() {
 
         _this.closed = !_this.closed;
 
-
       });
 
+      */
 
       // Oh, you're a nested GUI!
     } else {

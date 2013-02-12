@@ -1,9 +1,4 @@
 
-var mat = new THREE.ParticleBasicMaterial({
-  color: 0xFFFFFF,
-  size: 2,
-});
-
 
 var texture = THREE.ImageUtils.loadTexture( "img/colors.png" );
 texture.minFilter = THREE.LinearFilter;
@@ -77,6 +72,8 @@ var init = function(){
   var NEAR = 0.1;
   var FAR = 10000;
 
+  $container = $('#container');
+
   //CAMERA
   window.camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
   camera.position.z = 500;
@@ -95,14 +92,14 @@ var init = function(){
   //add_sphere();
 
   //SETUP CONTROLS
-  window.controls = new THREE.TrackballControls(camera);
+  window.controls = new THREE.TrackballControls(camera, $container[0]);
 
   //SETUP RENDER
   window.renderer = new THREE.WebGLRenderer();
   renderer.setSize(WIDTH, HEIGHT);
 
   //HOOK IT UP TO THE DOM
-  $('#container').append(renderer.domElement);
+  $container.append(renderer.domElement);
 
   //START STREAMING
   init_stream();
@@ -128,6 +125,19 @@ callbacks = {
 
 
 $(document).ready(function(){
+
+  a = function(){
+  this.message = 'dat.gui';
+  this.speed = 0.8;
+  };
+
+  inst = new a();
+  gui = new dat.GUI({hideable: false, height: window.height});
+
+  gui.add(inst, 'message');
+  gui.add(inst, 'speed', -5, 5);
+
+
   init();
   window.addEventListener('resize', callbacks.resize, false);
   render_loop();
