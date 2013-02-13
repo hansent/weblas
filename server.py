@@ -90,7 +90,6 @@ class StaticFileHandler(tornado.web.StaticFileHandler):
 
 routes = [
     (r'/socket', SocketConnection),
-    (r'/(index\.html)?$', StaticFileHandler, {'path': './app'}),
     (r'/(.*)$', StaticFileHandler, {'path': './app'}),
 ]
 
