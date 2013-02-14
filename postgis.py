@@ -1,45 +1,22 @@
 import psycopg2
 import numpy as np
 
-class Dimension:
-    def __init__(self, element):
+import schema
+import pointcloud
+
+class Dimension(schema.Dimension):
+    def __init__(self, element, *args, **kwargs):
         # element.tag is something like 
         # '{http://pointcloud.org/schemas/PC/1.1}dimension'
         # extract the name space so we 
         ns = element.tag.replace('dimension', '')
         for attribute in element:
             self.__dict__[attribute.tag.replace(ns,'')] = attribute.text
-        self.index = None
-    # def __eq__(self, other):
-    #     return self.name == other.name
-    
-    def __cmp__(self, other):
-        if not self.index and not other.index:
-            raise Exception("Dimension does not have index specified!")
-        if self.index > other.index:
-            return 1
-        if self.index < other.index:
-            return -1
-        if self.index == other.index:
-            return 0
+        
+        schema.Dimension.__init__(self, *args, **kwargs)
 
-class Schema:
-    def __init__(self):
-        self.dimensions = {}
-    def __iter__(self):
-        for dim in self.dimensions:
-            yield self.dimensions[dim]
-    
-    def __getitem__(self, name):
-        return self.dimensions[name]
-    
-    def append(self, dimension):
-        if self.dimensions.has_key(dimension.name):
-            raise Exception("Dimension with name '%s' already exists on this schema!" % dimension.name)
-        self.dimensions[dimension.name] = dimension
-
-class PointCloud:
-    def __init__(self, cloud_table, cloud_id, connection=''):
+class PostGIS(pointcloud.PointCloud):
+    def __init__(self, cloud_table, cloud_id, connection='', *args, **kwargs):
         self.cloud_id = cloud_id
         self.cloud_table = cloud_table
         
@@ -48,7 +25,7 @@ class PointCloud:
         self.connection = psycopg2.connect(self.connect_string)
         
         self.block_table = self.get_block_table()
-        self.schema = self.get_schema()
+        pointcloud.PointCloud.__init__(self, *args, **kwargs)
         
     def get_block_table(self):
         cur = self.connection.cursor()
@@ -70,15 +47,15 @@ class PointCloud:
         minx, miny, minz = bounds[0].split()
         maxx, maxy, maxz = bounds[1].split()
         # print minx, miny, minz, maxx, maxy, maxz
-        return minx, miny, minz, maxx, maxy, maxz
-    
-    bounds = property(get_bounds)
+        return tuple(float(x) for x in (minx, miny, minz, maxx, maxy, maxz))
+        # return minx, miny, minz, maxx, maxy, maxz
 
-# 
-# from shapely.wkt import loads
-# poly = loads(bounds)
-# print poly
-
+    def get_num_points(self):
+        cur = self.connection.cursor()
+        query = 'SELECT SUM(NUM_POINTS) from %s where cloud_id=%d' % (self.block_table, self.cloud_id)
+        cur.execute(query)
+        count = cur.fetchone()[0]
+        return int(count)
 
     def get_schema(self):
         
@@ -86,23 +63,8 @@ class PointCloud:
         xml = 'SELECT SCHEMA from %s where cloud_id=%d' % (self.cloud_table, self.cloud_id)
         cur.execute(xml)
         xml = cur.fetchone()[0]
-        # f = open('schema.xml', 'wb')
-        # f.write(xml)
-        # f.close()
 
-        import xml.etree.ElementTree as ET
-        root = ET.fromstring(xml)
-        schema = Schema()
-        i = 0
-        for child in root.getchildren():
-            dim = Dimension(child)
-            dim.index = i
-            schema.append(dim)
-            i = i + 1
-        
-        return schema;
-    
-    def get_numpy_frmt(self):
+
         types = {   'int8_t'   : np.int8,
                     'uint8_t'  : np.uint8,
                     'int16_t'  : np.int16,
@@ -113,19 +75,33 @@ class PointCloud:
                     'uint64_t' : np.uint64,
                     'float'    : np.float32, 
                     'double'   : np.float64}
-        format = []
-        for dimension in self.schema:
-            ntype = types[dimension.interpretation]
-            format.append((dimension.name, ntype))
-        return format
+
+    
+
+        import xml.etree.ElementTree as ET
+        root = ET.fromstring(xml)
+        s = schema.Schema()
+        
+        i = 0
+        for child in root.getchildren():
+            dim = Dimension(child)
+            dim.index = i
+            d = types[dim.interpretation]
+            t = [(dim.name, d)]
+            dim.np_fmt = np.dtype(t)
+            s.append(dim)
+            i = i + 1
+        
+        return s;
+
+
         
     def get_blocks(self):
 
         cursor = self.connection.cursor()
-        query = 'SELECT NUM_POINTS, POINTS from %s where cloud_id = %d ' % (self.block_table, self.cloud_id)
+        query = 'SELECT NUM_POINTS, POINTS from %s where cloud_id = %d and block_id=1' % (self.block_table, self.cloud_id)
         cursor.execute(query)
-        
-        format = self.get_numpy_frmt()
+
         for row in cursor:
             yield row
             # count = int(row[0])
@@ -142,24 +118,32 @@ class PointCloud:
     blocks = property(get_blocks)
     
     def get_dimension(self, dimension, block):
-        count = int(row[0])
-        blob = row[1]
-        data = np.frombuffer(blob, dtype=format)
-        yield np.array([i[dimension.index] for i in block])
+        count = int(block[0])
+        blob = block[1]
+        print self.schema.np_fmt
+        data = np.frombuffer(blob, dtype=self.schema.np_fmt)
+        return np.array([i[dimension.index] for i in block])
 
 if __name__ == '__main__':
     
     cloud_table = 'sthelens_cloud'
     cloud_id = 1
-    p = PointCloud(cloud_table, cloud_id)
+    p = PostGIS(cloud_table, cloud_id)
         
-    bounds = p.bounds
+    print p.bounds
     byte_size = sum([int(i.size) for i in p.schema])
-    
-    
+    print byte_size
+    print p.num_points
+    print p.schema
+
+    # for dim in p.schema:
+    #     print dim.name, dim.np_fmt
+
     
     
     for block in p.blocks:
         x = p.get_dimension(p.schema['X'], block)
+        print x
+        break
         y = p.get_dimension(p.schema['Y'], block)
         z = p.get_dimension(p.schema['Z'], block)
