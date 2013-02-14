@@ -8,7 +8,35 @@ class Dimension:
         # extract the name space so we 
         ns = element.tag.replace('dimension', '')
         for attribute in element:
-            self.__dict__[attribute.tag.replace(ns,'')] = attribute.text  
+            self.__dict__[attribute.tag.replace(ns,'')] = attribute.text
+        self.index = None
+    # def __eq__(self, other):
+    #     return self.name == other.name
+    
+    def __cmp__(self, other):
+        if not self.index and not other.index:
+            raise Exception("Dimension does not have index specified!")
+        if self.index > other.index:
+            return 1
+        if self.index < other.index:
+            return -1
+        if self.index == other.index:
+            return 0
+
+class Schema:
+    def __init__(self):
+        self.dimensions = {}
+    def __iter__(self):
+        for dim in self.dimensions:
+            yield self.dimensions[dim]
+    
+    def __getitem__(self, name):
+        return self.dimensions[name]
+    
+    def append(self, dimension):
+        if self.dimensions.has_key(dimension.name):
+            raise Exception("Dimension with name '%s' already exists on this schema!" % dimension.name)
+        self.dimensions[dimension.name] = dimension
 
 class PointCloud:
     def __init__(self, cloud_table, cloud_id, connection=''):
@@ -16,7 +44,7 @@ class PointCloud:
         self.cloud_table = cloud_table
         
         if not connection:
-            self.connect_string = "dbname=lidar host=192.168.1.61 user=hansent password=hansent"
+            self.connect_string = "dbname=lidar host=192.168.1.113 user=hansent password=hansent"
         self.connection = psycopg2.connect(self.connect_string)
         
         self.block_table = self.get_block_table()
@@ -64,11 +92,15 @@ class PointCloud:
 
         import xml.etree.ElementTree as ET
         root = ET.fromstring(xml)
-        dimensions = []
+        schema = Schema()
+        i = 0
         for child in root.getchildren():
-            dimensions.append(Dimension(child))
+            dim = Dimension(child)
+            dim.index = i
+            schema.append(dim)
+            i = i + 1
         
-        return dimensions;
+        return schema;
     
     def get_numpy_frmt(self):
         types = {   'int8_t'   : np.int8,
@@ -95,18 +127,25 @@ class PointCloud:
         
         format = self.get_numpy_frmt()
         for row in cursor:
-            count = int(row[0])
-            blob = row[1]
-            data = np.frombuffer(blob, dtype=format)
-            
-            # probably some smart numpy way to get this 
-            # slice without a copy and coersion into a list - hobu
-            x = np.array([i[0] for i in data])
-            y = np.array([i[1] for i in data])
-            z = np.array([i[2] for i in data])
-            
-            yield (x, y, z)
+            yield row
+            # count = int(row[0])
+            # blob = row[1]
+            # data = np.frombuffer(blob, dtype=format)
+            # 
+            # # probably some smart numpy way to get this 
+            # # slice without a copy and coersion into a list - hobu
+            # x = np.array([i[0] for i in data])
+            # y = np.array([i[1] for i in data])
+            # z = np.array([i[2] for i in data])
+            # 
+            # yield (x, y, z)
     blocks = property(get_blocks)
+    
+    def get_dimension(self, dimension, block):
+        count = int(row[0])
+        blob = row[1]
+        data = np.frombuffer(blob, dtype=format)
+        yield np.array([i[dimension.index] for i in block])
 
 if __name__ == '__main__':
     
@@ -116,6 +155,11 @@ if __name__ == '__main__':
         
     bounds = p.bounds
     byte_size = sum([int(i.size) for i in p.schema])
-
+    
+    
+    
+    
     for block in p.blocks:
-        print block[0].shape
+        x = p.get_dimension(p.schema['X'], block)
+        y = p.get_dimension(p.schema['Y'], block)
+        z = p.get_dimension(p.schema['Z'], block)
