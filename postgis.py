@@ -132,10 +132,12 @@ if __name__ == '__main__':
     print p.bounds
     byte_size = sum([int(i.size) for i in p.schema])
     print byte_size
-    print p.num_points
     print p.schema
-
     
+    print len(p)
+    
+    
+    print p.offsets, p.scales
     for block in p.blocks:
         x = p.get_dimension(p.schema['X'], block)
         y = p.get_dimension(p.schema['Y'], block)

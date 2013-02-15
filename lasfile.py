@@ -46,6 +46,15 @@ class LASFile(pointcloud.PointCloud):
             d.np_fmt = spec.np_fmt
             s.append(d)
             i = i + 1
+        
+        s['X'].scale = self.f.header.scale[0]
+        s['Y'].scale = self.f.header.scale[1]
+        s['Z'].scale = self.f.header.scale[2]
+
+        s['X'].offset = self.f.header.offset[0]
+        s['Y'].offset = self.f.header.offset[1]
+        s['Z'].offset = self.f.header.offset[2]
+
         return s
 
 if __name__ == '__main__':
@@ -55,10 +64,9 @@ if __name__ == '__main__':
         
     print p.bounds
     byte_size = sum([int(i.size) for i in p.schema])
-    for dim in p.schema:
-        print dim.np_fmt
     print byte_size
-    print p.num_points
-    print p.schema
+    print len(p)
+
+    print p.offsets, p.scales
 
     
