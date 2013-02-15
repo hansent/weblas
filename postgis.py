@@ -3,6 +3,7 @@ import numpy as np
 
 import schema
 import pointcloud
+import bounds
 
 class Dimension(schema.Dimension):
     def __init__(self, element, *args, **kwargs):
@@ -36,18 +37,18 @@ class PostGIS(pointcloud.PointCloud):
 
     def get_bounds(self):
         cur = self.connection.cursor()
-        bounds = 'select box3d(st_union(extent)) from %s' % self.block_table        
-        cur.execute(bounds)
+        b = 'select box3d(st_union(extent)) from %s' % self.block_table        
+        cur.execute(b)
         
-        bounds = cur.fetchone()[0]
-        bounds = bounds.replace('BOX3D(','')
-        bounds = bounds.replace(')', '')
+        b = cur.fetchone()[0]
+        b = b.replace('BOX3D(','')
+        b = b.replace(')', '')
 
-        bounds = bounds.split(',')
-        minx, miny, minz = bounds[0].split()
-        maxx, maxy, maxz = bounds[1].split()
+        b = b.split(',')
+        minx, miny, minz = b[0].split()
+        maxx, maxy, maxz = b[1].split()
         # print minx, miny, minz, maxx, maxy, maxz
-        return tuple(float(x) for x in (minx, miny, minz, maxx, maxy, maxz))
+        return bounds.Bounds(*tuple(float(x) for x in (minx, miny, minz, maxx, maxy, maxz)))
         # return minx, miny, minz, maxx, maxy, maxz
 
     def get_num_points(self):
@@ -104,12 +105,8 @@ class PostGIS(pointcloud.PointCloud):
 
         for row in cursor:
             yield row
-            # count = int(row[0])
-            # blob = row[1]
-            # data = np.frombuffer(blob, dtype=format)
-            # 
-            # # probably some smart numpy way to get this 
-            # # slice without a copy and coersion into a list - hobu
+
+
             # x = np.array([i[0] for i in data])
             # y = np.array([i[1] for i in data])
             # z = np.array([i[2] for i in data])
@@ -120,9 +117,11 @@ class PostGIS(pointcloud.PointCloud):
     def get_dimension(self, dimension, block):
         count = int(block[0])
         blob = block[1]
-        print self.schema.np_fmt
         data = np.frombuffer(blob, dtype=self.schema.np_fmt)
-        return np.array([i[dimension.index] for i in block])
+        
+        # # probably some smart numpy way to get this 
+        # # slice without a copy and coersion into a list - hobu
+        yield np.array([i[dimension.index] for i in data])
 
 if __name__ == '__main__':
     
@@ -136,14 +135,11 @@ if __name__ == '__main__':
     print p.num_points
     print p.schema
 
-    # for dim in p.schema:
-    #     print dim.name, dim.np_fmt
-
-    
     
     for block in p.blocks:
         x = p.get_dimension(p.schema['X'], block)
-        print x
-        break
         y = p.get_dimension(p.schema['Y'], block)
         z = p.get_dimension(p.schema['Z'], block)
+        
+        l = list(x)
+        print l

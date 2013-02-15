@@ -33,8 +33,12 @@ class Schema(object):
         return output
         
     def __iter__(self):
+        dims = []
         for dim in self.dimensions:
-            yield self.dimensions[dim]
+            dims.append(self.dimensions[dim])
+        dims.sort()
+        for dim in dims:
+            yield dim
     
     def __getitem__(self, name):
         return self.dimensions[name]
@@ -49,14 +53,9 @@ class Schema(object):
 
     def get_np_fmt(self):
         import numpy as np
-        dims = []
-        for d in self:
-            dims.append(d)
-        dims.sort()
         fmt = []
-        for dim in dims:
+        for dim in self:
             f = dim.np_fmt
-            # import pdb;pdb.set_trace()
             fmt.append(f.descr[0])
         return np.dtype(fmt)
     np_fmt = property(get_np_fmt)

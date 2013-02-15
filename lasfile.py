@@ -20,7 +20,7 @@
 import laspy.file
 
 import pointcloud
-
+import bounds
 
 class LASFile(pointcloud.PointCloud):
     def __init__(self, filename, *args, **kwargs):
@@ -29,7 +29,7 @@ class LASFile(pointcloud.PointCloud):
         pointcloud.PointCloud.__init__(self, *args, **kwargs)
     
     def get_bounds(self):
-        return tuple(self.f.header.min + self.f.header.max)
+        return bounds.Bounds(*tuple(self.f.header.min + self.f.header.max))
     
     def get_num_points(self):
         return len(self.f.header)
@@ -47,7 +47,7 @@ class LASFile(pointcloud.PointCloud):
             s.append(d)
             i = i + 1
         return s
-            
+
 if __name__ == '__main__':
     
     filename = './static/serpent.las'
