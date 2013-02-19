@@ -1,6 +1,6 @@
 
 
-var texture = THREE.ImageUtils.loadTexture( "img/schema/div_Spectral.png" );
+var texture = THREE.ImageUtils.loadTexture( "data/height3.png" );
 texture.minFilter = THREE.LinearFilter;
 texture.magFilter = THREE.LinearFilter;
 
@@ -9,7 +9,7 @@ var uniforms = {
 };
 
 material = new GLSLMaterial({
-  shader: "glsl/basic.glsl",
+  shader: "glsl/height.glsl",
   uniforms: uniforms,
   depthTest: true, 
   depthWrite: true,
@@ -61,6 +61,16 @@ update_point_cloud = function(points){
 }
 
 
+var init_plane = function(){
+  var plane = new THREE.Mesh(
+    new THREE.PlaneGeometry(200,200, 256,256),
+    //new THREE.MeshLambertMaterial({color: 0xCCCCCC})  
+    material
+  );
+
+  scene.add(plane);
+}
+
 var init = function(){
   var WIDTH = window.innerWidth;
   var HEIGHT = window.innerHeight;
@@ -79,15 +89,15 @@ var init = function(){
   //LIGHT
   var pointLight = new THREE.PointLight( 0xFFFFFF );
   pointLight.position.x = 10;
-  pointLight.position.y = 50;
+  pointLight.position.y = 100;
   pointLight.position.z = 130;
 
   //SCENE SETUP
   window.scene = new THREE.Scene();
   scene.add(camera);
   scene.add(pointLight);
-  init_point_cloud();
-  //add_sphere();
+  init_plane();
+  //init_point_cloud();
 
   //SETUP CONTROLS
   window.controls = new THREE.TrackballControls(camera, $container[0]);
@@ -100,7 +110,7 @@ var init = function(){
   $container.append(renderer.domElement);
 
   //START STREAMING
-  init_stream();
+  //init_stream();
 };
 
 
