@@ -1,0 +1,3 @@
+*.pyc
+app/data/*.las
+*DS_Store
