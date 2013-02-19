@@ -22,7 +22,7 @@ class PostGIS(pointcloud.PointCloud):
         self.cloud_table = cloud_table
         
         if not connection:
-            self.connect_string = "dbname=lidar host=192.168.1.113 user=hansent password=hansent"
+            self.connect_string = "dbname=lidar host=localhost"
         self.connection = psycopg2.connect(self.connect_string)
         
         self.block_table = self.get_block_table()
