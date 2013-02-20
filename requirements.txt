@@ -1,0 +1,9 @@
+PIL==1.1.7
+distribute==0.6.35
+laspy==1.2.5
+numpy==1.6.2
+matplotlib==1.2.0
+scipy==0.11.0
+tornado==2.4.1
+wsgiref==0.1.2
+psycopg2
