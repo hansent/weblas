@@ -19,7 +19,7 @@ define(function(require){ var self = {};
     sock.binaryType = "arraybuffer";
 
     sock.onopen = function(){
-      sock.send_msg("load", {filename: "st-helens.large.las"});
+      sock.send_msg("load", {filename: "serpent-small.las"});
     }
     
     sock.onclose = function(){

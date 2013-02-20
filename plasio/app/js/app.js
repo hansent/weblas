@@ -90,7 +90,7 @@ define(function(require){
     var VIEW_ANGLE = 45;
     var ASPECT = WIDTH / HEIGHT;
     var NEAR = 0.1;
-    var FAR = 10000;
+    var FAR = 100000;
 
     $container = $('#container');
 
