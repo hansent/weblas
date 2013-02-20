@@ -1,5 +1,6 @@
 laspy
 numpy
 scipy
-tornado
 PIL
+tornado
+psycopg2

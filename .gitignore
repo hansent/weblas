@@ -1,3 +1,5 @@
 *.pyc
-app/data/*.las
+build/
+*.egg-info/
+plasio/app/data/*.las
 *DS_Store
