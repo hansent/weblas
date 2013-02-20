@@ -26,7 +26,7 @@ class SocketConnection(tornado.websocket.WebSocketHandler):
         msg_type = msg.get('type')
         msg_data = msg.get('data')
         if msg_type == 'load':
-            self.init_stream('app/data/{}'.format(msg_data['filename']))
+            self.init_stream('app/data/{0}'.format(msg_data['filename']))
             self.send_header()
             self.send_chunk()
         if msg_type == 'next_chunk':
@@ -39,11 +39,11 @@ class SocketConnection(tornado.websocket.WebSocketHandler):
         vx = f.x.astype(np.float32)
         vy = f.y.astype(np.float32)
         vz = f.z.astype(np.float32)
-        points = np.vstack((vx, vy, vz)).transpose()[::9]
+        points = np.vstack((vx, vy, vz)).transpose()[::20]
         points = points - self.minima
-        size = [0.5*(self.maxima[i]-self.minima[i]) for i in range(3) ]
-        points = (points - size) * -.01
-        #points = points * (10./self.maxima[i]-self.minima[i])
+        size = [(self.maxima[i]-self.minima[i]) for i in range(3) ]
+        points = points / min(size)
+        points  = (points * 500.0)
 
         self.points = points.ravel().astype(np.float32)
 

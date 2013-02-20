@@ -33,16 +33,13 @@ define(function(require){
 
     window.point_cloud =  new THREE.ParticleSystem(geom, material);
     scene.add(point_cloud);
+    point_cloud.scale = 3.0;
   };
 
 
   function add_sphere(){
-    var radius = 50,
-        segments = 16,
-        rings = 16;
-
     var sphere = new THREE.Mesh(
-      new THREE.SphereGeometry(100, 32, 32),
+      new THREE.SphereGeometry(1.0, 32, 32),
       new THREE.MeshLambertMaterial({color: 0xCC0000})
     );
 
@@ -112,7 +109,6 @@ define(function(require){
     scene.add(camera);
     scene.add(pointLight);
     init_point_cloud();
-    //add_sphere();
 
     //SETUP CONTROLS
     window.controls = new THREE.TrackballControls(camera, $container[0]);
