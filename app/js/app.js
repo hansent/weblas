@@ -1,6 +1,4 @@
 
-
-
 define(function(require){
   var $    = require("jquery");
   var _th  = require("./lib/three");
@@ -21,9 +19,10 @@ define(function(require){
   material = new util.GLSLMaterial({
     shader: "glsl/basic.glsl",
     uniforms: uniforms,
-    depthTest: true, 
-    depthWrite: true,
-    transparent: true 
+    depthTest: false, 
+    depthWrite: false,
+    transparent: true ,
+    blending: THREE.AdditiveBlending
   });
 
 
@@ -69,6 +68,22 @@ define(function(require){
     scene.add(point_cloud);
 
   }
+
+
+  var callbacks = {
+    resize: function(){
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect	= window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+    },
+  };
+
+
+
+
+  var attach_window_event_handlers = function(){
+    window.addEventListener('resize', callbacks.resize, false);
+  };
 
 
   var init = function(){
@@ -123,38 +138,12 @@ define(function(require){
 
 
 
-  callbacks = {
-    resize: function(){
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.aspect	= window.innerWidth/window.innerHeight;
-      camera.updateProjectionMatrix();
-    },
+  return {
+    start: function(){
+      init();
+      render_loop();
+    }
   };
-
-
-  $(document).ready(function(){
-
-    console.log("START");
-
-    a = function(){
-    this.message = 'dat.gui';
-    this.speed = 0.8;
-    };
-
-    inst = new a();
-    gui = new dat.GUI({hideable: false, height: window.height});
-
-    gui.add(inst, 'message');
-    gui.add(inst, 'speed', -5, 5);
-
-
-    init();
-    window.addEventListener('resize', callbacks.resize, false);
-    render_loop();
-  });
-
-
-
 
 
 
