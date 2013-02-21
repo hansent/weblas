@@ -105,14 +105,17 @@ class PostGIS(pointcloud.PointCloud):
         rows = cursor.fetchmany(self.rowcount)
         
         output = None
+        x_ind = self.schema['X'].index
+        y_ind = self.schema['Y'].index
+        z_ind = self.schema['Z'].index
         while rows:
             
             for row in rows:
                 blob = row[1]
                 data = np.frombuffer(blob, dtype=self.schema.np_fmt)
-                vx = np.array([i[self.schema['X'].index] for i in data])
-                vy = np.array([i[self.schema['Y'].index] for i in data])
-                vz = np.array([i[self.schema['Z'].index] for i in data])
+                vx = np.array([i[x_ind] for i in data])
+                vy = np.array([i[y_ind] for i in data])
+                vz = np.array([i[z_ind] for i in data])
                 points = np.vstack((vx, vy, vz)).transpose()
                 
                 # pluck out unique x,y,z tuples
@@ -137,6 +140,12 @@ if __name__ == '__main__':
     
     
     print p.offsets, p.scales
+    output = None
     for block in p:
-        print block
+        if output == None:
+            output = block
+        else:
+            output = np.vstack((output, block))
+    
+    print 'shape: ', output.shape
 
