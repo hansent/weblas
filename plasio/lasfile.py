@@ -1,21 +1,4 @@
-            # f = laspy.file.File(filename)
-            # self.minima = f.header.min
-            # self.maxima = f.header.max
-            # 
-            # vx = f.x.astype(np.float32)
-            # vy = f.y.astype(np.float32)
-            # vz = f.z.astype(np.float32)
-            # points = np.vstack((vx, vy, vz)).transpose()[0::100]
-            # points = (points - self.minima) /10.0 #/ max(self.maxima)
-            # self.points = points.ravel().astype(np.float32)
-            # 
-            # self.num_points = len(self.points)
-            # self.item_size = self.points.dtype.itemsize
-            # self.point_size = self.item_size * 3
-            # self.buffer_size = self.point_size * self.num_points
-            # self.chunk_size = self.point_size * 10000
-            # self.offset = 0
-            # 
+import numpy as np
 
 import laspy.file
 
@@ -27,7 +10,29 @@ class LASFile(pointcloud.PointCloud):
         self.f = laspy.file.File(filename)
         self.filename = filename
         pointcloud.PointCloud.__init__(self, *args, **kwargs)
+        self.offset = 0
+        
+        try:
+            self.chunk_size = kwargs['chunk_size']
+        except KeyError:
+            self.chunk_size = 10000
     
+        vx = self.f.x.astype(np.float32)
+        vy = self.f.y.astype(np.float32)
+        vz = self.f.z.astype(np.float32)
+        
+        self.points = np.vstack((vx, vy, vz)).transpose()[::]
+    
+    def next(self):
+        if self.offset >= len(self.points):
+            raise StopIteration
+        data = self.points[self.offset:self.offset+self.chunk_size]
+        self.offset = self.offset + self.chunk_size
+        return data
+    
+    def __iter__(self):
+        return self
+        
     def get_bounds(self):
         return bounds.Bounds(*tuple(self.f.header.min + self.f.header.max))
     
@@ -59,7 +64,7 @@ class LASFile(pointcloud.PointCloud):
 
 if __name__ == '__main__':
     
-    filename = './static/serpent.las'
+    filename = '../static/serpent.las'
     p = LASFile(filename)
         
     print p.bounds

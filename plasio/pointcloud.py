@@ -30,9 +30,6 @@ class PointCloud:
                 offsets[d] = o
             except AttributeError:
                 pass
-        
-
-        
         try:
             offset_x = offsets['X']
         except KeyError:
@@ -82,3 +79,11 @@ class PointCloud:
         
         return np.array((scale_x, scale_y, scale_z))
     scales = property(get_scales)
+
+    def scale(self, chunk, exaggeration=500.0):
+        b = self.bounds
+        output = chunk - b.min
+        size = [(b.max[i]-b.min[i]) for i in range(len(b.min))]
+        output = output / min(size)
+        output = (output * exaggeration)        
+        return output

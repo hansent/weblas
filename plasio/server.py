@@ -41,7 +41,7 @@ class SocketConnection(tornado.websocket.WebSocketHandler):
         vz = f.z.astype(np.float32)
         points = np.vstack((vx, vy, vz)).transpose()[::]
         points = points - self.minima
-        size = [(self.maxima[i]-self.minima[i]) for i in range(3) ]
+        size = [(self.maxima[i]-self.minima[i]) for i in range(3)]
         points = points / min(size)
         points  = (points * 500.0)
 
