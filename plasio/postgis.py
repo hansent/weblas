@@ -102,7 +102,6 @@ class PostGIS(pointcloud.PointCloud):
         
         row = cursor.fetchone()
         while row:
-            
             x = self.get_dimension(self.schema['X'], row)
             y = self.get_dimension(self.schema['Y'], row)
             z = self.get_dimension(self.schema['Z'], row)
@@ -120,7 +119,7 @@ class PostGIS(pointcloud.PointCloud):
         
         # # probably some smart numpy way to get this 
         # # slice without a copy and coersion into a list - hobu
-        return np.array([i[dimension.index] for i in data])
+        return np.array((i[dimension.index] for i in data))
     # 
     # def __iter__(self):
     #     return self

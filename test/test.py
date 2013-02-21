@@ -118,13 +118,12 @@ class PostgisTestCase(unittest.TestCase):
     
     def test_chunk_iteration(self):
         """Iterating a postgis table returns chunks"""
-        count = 0
-        for chunk in iter(self.p):
-
-            count += 1
-            # count = count + len(chunk)
+        query_count = 0
+        block_count = 155
+        for block in iter(self.p):
+            query_count += 1
    
-        self.assertEqual(count, len(self.p))
+        self.assertEqual(query_count, block_count)
 
     # def test_chunk_scaling(self):
     #     """Scaling chunks works"""
