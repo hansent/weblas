@@ -94,22 +94,24 @@ class PostGIS(pointcloud.PointCloud):
 
 
         
-    def get_blocks(self):
+    def __iter__(self):
 
         cursor = self.connection.cursor()
-        query = 'SELECT NUM_POINTS, POINTS from %s where cloud_id = %d and block_id=1' % (self.block_table, self.cloud_id)
+        query = 'SELECT NUM_POINTS, POINTS from %s where cloud_id = %d' % (self.block_table, self.cloud_id)
         cursor.execute(query)
+        
+        row = cursor.fetchone()
+        while row:
+            
+            x = self.get_dimension(self.schema['X'], row)
+            y = self.get_dimension(self.schema['Y'], row)
+            z = self.get_dimension(self.schema['Z'], row)
+            points = np.vstack((x, y, z)).transpose()[::]
+            yield points
+            row = cursor.fetchone()
+            
 
-        for row in cursor:
-            yield row
-
-
-            # x = np.array([i[0] for i in data])
-            # y = np.array([i[1] for i in data])
-            # z = np.array([i[2] for i in data])
-            # 
-            # yield (x, y, z)
-    blocks = property(get_blocks)
+    # blocks = property(get_blocks)
     
     def get_dimension(self, dimension, block):
         count = int(block[0])
@@ -118,7 +120,13 @@ class PostGIS(pointcloud.PointCloud):
         
         # # probably some smart numpy way to get this 
         # # slice without a copy and coersion into a list - hobu
-        yield np.array([i[dimension.index] for i in data])
+        return np.array([i[dimension.index] for i in data])
+    # 
+    # def __iter__(self):
+    #     return self
+    #     
+    # def next(self):
+    #     return self.get_blocks()
 
 if __name__ == '__main__':
     

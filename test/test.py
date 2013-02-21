@@ -93,6 +93,11 @@ class PostgisTestCase(unittest.TestCase):
         from plasio import postgis
         self.p = postgis.PostGIS(postgis_connection, 'sthelens_cloud', 1)
 
+    def test_length(self):
+        """Test PostGIS count"""
+        count = len(self.p)
+        self.assertEqual(count, 12388139)
+
     def test_bounds(self):
         """Test PostGIS bounds"""
         b = self.p.bounds
@@ -110,6 +115,31 @@ class PostgisTestCase(unittest.TestCase):
         self.assertEqual(maxx, '564678.4300')
         self.assertEqual(maxy, '5120950.9000')
         self.assertEqual(maxz, '2539.3800')
+    
+    def test_chunk_iteration(self):
+        """Iterating a postgis table returns chunks"""
+        count = 0
+        for chunk in iter(self.p):
+
+            count += 1
+            # count = count + len(chunk)
+   
+        self.assertEqual(count, len(self.p))
+
+    # def test_chunk_scaling(self):
+    #     """Scaling chunks works"""
+    #     p = self.file
+    # 
+    #     # get first chunk
+    #     chunk = p.next()
+    #     scaled = p.scale(chunk)
+    #     self.assertEqual('%.2f'% chunk[0][0], '289814.16')
+    #     self.assertEqual('%.2f'% chunk[0][1], '4320978.50')
+    #     self.assertEqual('%.2f'% chunk[0][2], '170.76')
+    # 
+    #     self.assertEqual('%.2f'% scaled[0][0], '2350.92')
+    #     self.assertEqual('%.2f'% scaled[0][1], '991.98')
+    #     self.assertEqual('%.2f'% scaled[0][2], '110.01')
 
     def tearDown(self):
         pass
