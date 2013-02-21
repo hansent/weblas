@@ -24,7 +24,9 @@ class PostGIS(pointcloud.PointCloud):
         
         self.block_table = self.get_block_table()
         pointcloud.PointCloud.__init__(self, *args, **kwargs)
-        
+        self.rowcount = 20
+        self.spatial_filter = None
+                
     def get_block_table(self):
         cur = self.connection.cursor()
         block_table = 'SELECT BLOCK_TABLE FROM %s where cloud_id = %d' % (self.cloud_table, self.cloud_id)
@@ -97,41 +99,34 @@ class PostGIS(pointcloud.PointCloud):
     def __iter__(self):
 
         cursor = self.connection.cursor()
-        query = 'SELECT NUM_POINTS, POINTS from %s where cloud_id = %d' % (self.block_table, self.cloud_id)
+        query = 'SELECT NUM_POINTS, POINTS from %s where cloud_id = %d ' % (self.block_table, self.cloud_id)
         cursor.execute(query)
         
-        row = cursor.fetchone()
-        while row:
-            x = self.get_dimension(self.schema['X'], row)
-            y = self.get_dimension(self.schema['Y'], row)
-            z = self.get_dimension(self.schema['Z'], row)
-            points = np.vstack((x, y, z)).transpose()[::]
-            yield points
-            row = cursor.fetchone()
-            
-
-    # blocks = property(get_blocks)
-    
-    def get_dimension(self, dimension, block):
-        count = int(block[0])
-        blob = block[1]
-        data = np.frombuffer(blob, dtype=self.schema.np_fmt)
+        rows = cursor.fetchmany(self.rowcount)
         
-        # # probably some smart numpy way to get this 
-        # # slice without a copy and coersion into a list - hobu
-        return np.array((i[dimension.index] for i in data))
-    # 
-    # def __iter__(self):
-    #     return self
-    #     
-    # def next(self):
-    #     return self.get_blocks()
+        output = None
+        while rows:
+            
+            for row in rows:
+                blob = row[1]
+                data = np.frombuffer(blob, dtype=self.schema.np_fmt)
+                vx = np.array([i[self.schema['X'].index] for i in data])
+                vy = np.array([i[self.schema['Y'].index] for i in data])
+                vz = np.array([i[self.schema['Z'].index] for i in data])
+                points = np.vstack((vx, vy, vz)).transpose()
+                
+                # pluck out unique x,y,z tuples
+                output = np.vstack([np.array(u) for u in set([tuple(p) for p in points])])
+                yield output
+            
+            rows = cursor.fetchmany(self.rowcount)
+    
 
 if __name__ == '__main__':
-    
+    postgis_connection = "dbname=lidar host=localhost"
     cloud_table = 'sthelens_cloud'
     cloud_id = 1
-    p = PostGIS(cloud_table, cloud_id)
+    p = PostGIS(postgis_connection, cloud_table, cloud_id)
         
     print p.bounds
     byte_size = sum([int(i.size) for i in p.schema])
@@ -142,10 +137,6 @@ if __name__ == '__main__':
     
     
     print p.offsets, p.scales
-    for block in p.blocks:
-        x = p.get_dimension(p.schema['X'], block)
-        y = p.get_dimension(p.schema['Y'], block)
-        z = p.get_dimension(p.schema['Z'], block)
-        
-        l = list(x)
-        print l
+    for block in p:
+        print block
+
