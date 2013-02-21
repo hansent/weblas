@@ -2,6 +2,8 @@ import unittest
 
 from plasio import lasfile
 
+postgis_connection = "dbname=lidar host=localhost"
+
 class LasTestCase(unittest.TestCase):
     serpent = './static/serpent-small.las'
     def setUp(self):
@@ -83,8 +85,50 @@ class LasTestCase(unittest.TestCase):
         pass
 
 
+class PostgisTestCase(unittest.TestCase):
+    
+    
+    serpent = ''
+    def setUp(self):
+        from plasio import postgis
+        self.p = postgis.PostGIS(postgis_connection, 'sthelens_cloud', 1)
+
+    def test_bounds(self):
+        """Test PostGIS bounds"""
+        b = self.p.bounds
+        minx = '%.4f' % b.minx
+        miny = '%.4f' % b.miny
+        minz = '%.4f' % b.minz
+        maxx = '%.4f' % b.maxx
+        maxy = '%.4f' % b.maxy
+        maxz = '%.4f' % b.maxz
+
+        self.assertEqual(minx, '560022.4100')
+        self.assertEqual(miny, '5114840.6000')
+        self.assertEqual(minz, '1207.5700')
+
+        self.assertEqual(maxx, '564678.4300')
+        self.assertEqual(maxy, '5120950.9000')
+        self.assertEqual(maxz, '2539.3800')
+
+    def tearDown(self):
+        pass
+
 def test_plas():
     las = unittest.TestLoader().loadTestsFromTestCase(LasTestCase)
 
-
-    return unittest.TestSuite([las])
+    tests = [las]
+    
+    try:
+        import psycopg2
+        
+        try:
+            conn = psycopg2.connect(postgis_connection)
+            postgis = unittest.TestLoader().loadTestsFromTestCase(PostgisTestCase)
+            tests.append(postgis)
+        except psycopg2.OperationalError:
+            pass
+    except ImportError:
+        pass
+    
+    return unittest.TestSuite(tests)
