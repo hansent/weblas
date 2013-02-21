@@ -17,13 +17,10 @@ class Dimension(schema.Dimension):
         schema.Dimension.__init__(self, *args, **kwargs)
 
 class PostGIS(pointcloud.PointCloud):
-    def __init__(self, cloud_table, cloud_id, connection='', *args, **kwargs):
+    def __init__(self, connection, cloud_table, cloud_id, *args, **kwargs):
         self.cloud_id = cloud_id
         self.cloud_table = cloud_table
-        
-        if not connection:
-            self.connect_string = "dbname=lidar host=localhost"
-        self.connection = psycopg2.connect(self.connect_string)
+        self.connection = psycopg2.connect(connection)
         
         self.block_table = self.get_block_table()
         pointcloud.PointCloud.__init__(self, *args, **kwargs)
