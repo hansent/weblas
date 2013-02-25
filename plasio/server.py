@@ -3,8 +3,7 @@ import logging
 import os.path
 import numpy as np
 import json
-import laspy.file
-
+import lasfile
 import tornado
 import tornado.autoreload
 import tornado.ioloop
@@ -22,7 +21,6 @@ class SocketConnection(tornado.websocket.WebSocketHandler):
 
     def on_message(self, msg):
         msg = json.loads(msg)
-
         msg_type = msg.get('type')
         msg_data = msg.get('data')
         if msg_type == 'load':
@@ -33,36 +31,15 @@ class SocketConnection(tornado.websocket.WebSocketHandler):
             self.send_chunk()
 
     def init_stream(self, filename):
-        f = laspy.file.File(filename)
-        self.minima = f.header.min
-        self.maxima = f.header.max
-        vx = f.x.astype(np.float32)
-        vy = f.y.astype(np.float32)
-        vz = f.z.astype(np.float32)
-        points = np.vstack((vx, vy, vz)).transpose()[::]
-        points = points - self.minima
-        size = [(self.maxima[i]-self.minima[i]) for i in range(3)]
-        points = points / min(size)
-        points  = (points * 500.0)
-
-        self.points = points.ravel().astype(np.float32)
-
-        self.num_points = len(self.points)
-        self.item_size = self.points.dtype.itemsize
-        self.point_size = self.item_size * 3
-        self.buffer_size = self.point_size * self.num_points
-        self.chunk_size = self.point_size * 10000
-        self.offset = 0
+        self.point_cloud = lasfile.LASFile(filename)
 
     def send_header(self):
         data = {
-            'num_points': self.num_points,
-            'item_size': self.item_size,
-            'point_size': self.point_size,
-            'buffer_size': self.buffer_size,
-            'chunk_size': self.chunk_size,
-            'minima': self.minima,
-            'maxima': self.maxima
+            'num_points': self.point_cloud.num_points,
+            'chunk_size': self.point_cloud.chunk_size,
+            'scale_factor': self.point_cloud.scale_factor,
+            'center': self.point_cloud.center,
+            'extent': self.point_cloud.extents
         }
         self.send_msg('header', data)
 
@@ -70,16 +47,17 @@ class SocketConnection(tornado.websocket.WebSocketHandler):
         self.write_message({'type': msg_type, 'data': data})
 
     def send_chunk(self):
-        chunk = np.getbuffer(self.points, self.offset, self.chunk_size)
-        if len(chunk) == 0:
+        try:
+            chunk = self.point_cloud.next()
+            self.write_message(bytes(chunk), True)
+        except StopIteration:
             return
-        self.write_message(bytes(chunk), True)
-        self.offset += self.chunk_size
+
 
 
 class StaticFileHandler(tornado.web.StaticFileHandler):
     def get(self, path, include_body=True):
-        if path is None:
+        if not path:
             path = 'index.html'
         return super(StaticFileHandler, self).get(path, include_body)
 

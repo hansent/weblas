@@ -1,8 +1,8 @@
 define(function(require){ var self = {};
 
-  var concatFloat32Array = function(first, second){
+  var concatArray = function(first, second){
       var firstLength = first.length;
-      var result = new Float32Array(firstLength + second.length);
+      var result = new Uint16Array(firstLength + second.length);
       result.set(first);
       result.set(second, firstLength);
       return result;
@@ -12,7 +12,7 @@ define(function(require){ var self = {};
   self.init_stream = function(){
 
     var header = null;
-    var buffer = new Float32Array([]);
+    var buffer = new Uint16Array([]);
     var chunk_index = 0;
 
     var sock = new WebSocket("ws://"+location.hostname+":8080/socket");
@@ -39,15 +39,19 @@ define(function(require){ var self = {};
     };
 
     sock.handle_controll_msg = function(msg){
-      if (msg.type === "header")
-        header = msg.data;
+      if (msg.type === "header"){
+        window.stream_header = msg.data;
+        console.log("HEADER", stream_header)
+      }
       else
         console.log("Unknown controll message:", msg);
     };
 
     sock.handle_binary_msg = function(data){
-      var new_part = new Float32Array(data);
-      buffer = concatFloat32Array(buffer, new_part);
+      console.log("binary message")
+      var new_part = new Uint16Array(data);
+      console.log(buffer[0], buffer[1], buffer[2]);
+      buffer = concatArray(buffer, new_part);
       window.update_point_cloud(buffer);
       setTimeout(function(){ sock.send_msg('next_chunk') }, 5);      
     };

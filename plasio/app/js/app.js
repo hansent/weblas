@@ -33,7 +33,6 @@ define(function(require){
 
     window.point_cloud =  new THREE.ParticleSystem(geom, material);
     scene.add(point_cloud);
-    point_cloud.scale = 3.0;
   };
 
 
@@ -48,22 +47,24 @@ define(function(require){
 
 
   update_point_cloud = function(points){
-
     geom =  new THREE.Geometry();
+    var maxx = 0;
+    var MAX_INT = 65535;
     for (var i=0; i<points.length; i=i+3){
-      var x = points[i];
-      var y = points[i+1];
-      var z = points[i+2];
-      geom.vertices.push(new THREE.Vector3(x,y,z));
+      var x = (points[i+0] / MAX_INT ) ;
+      var y = (points[i+1] / MAX_INT );
+      var z = (points[i+2] / MAX_INT) ;
+      var pt = new THREE.Vector3(x,y,z);
+      //console.log(points[i+0], points[i+0], points[i+0]);
+      geom.vertices.push(pt);
     }
-
-    //geom.computeBoundingBox();
-    //bb = geom.boundingBox;
-
+    console.log(maxx);
     scene.remove(point_cloud);
     point_cloud = new THREE.ParticleSystem(geom, material)
+    var c = stream_header.center;
+    var s = -1.0*stream_header.scale_factor;
+    point_cloud.position.set(c[0]*s, c[1]*s, c[2]*s);
     scene.add(point_cloud);
-
   }
 
 
@@ -96,7 +97,7 @@ define(function(require){
 
     //CAMERA
     window.camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
-    camera.position.z = 500;
+    camera.position.z = 10;
 
     //LIGHT
     var pointLight = new THREE.PointLight( 0xFFFFFF );

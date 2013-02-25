@@ -3,26 +3,26 @@ import numpy as np
 class PointCloud:
     def __init__(self):
         self.schema = self.get_schema()
-    
+
     def __len__(self):
         return self.num_points
-        
+
     def get_schema(self):
         pass
 
     def get_bounds(self):
-        pass    
+        pass
     bounds = property(lambda x:x.get_bounds())
-    
+
     def get_num_points(self):
         return None
     num_points = property(lambda x:x.get_num_points())
-    
+
     def get_offsets(self):
         dims = ["X", "Y", "Z"]
-        
+
         offsets = {}
-        
+
         for d in dims:
             try:
                 o = self.schema[d].offset
@@ -46,14 +46,14 @@ class PointCloud:
             offset_z = 0.0
 
         return np.array((offset_x, offset_y, offset_z))
-        
+
     offsets = property(get_offsets)
 
     def get_scales(self):
         dims = ["X", "Y", "Z"]
-        
+
         scales = {}
-        
+
         for d in dims:
             try:
                 o = self.schema[d].scale
@@ -76,14 +76,6 @@ class PointCloud:
             scale_z = scales['Z']
         except KeyError:
             scale_z = 1.0
-        
+
         return np.array((scale_x, scale_y, scale_z))
     scales = property(get_scales)
-
-    def scale(self, chunk, exaggeration=500.0):
-        b = self.bounds
-        output = chunk - b.min
-        size = [(b.max[i]-b.min[i]) for i in range(len(b.min))]
-        output = output / min(size)
-        output = (output * exaggeration)        
-        return output
