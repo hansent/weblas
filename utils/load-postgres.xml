@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Pipeline version="1.0">
+	<Writer type="drivers.soci.writer">
+		<Option name="connection">
+            host='localhost' dbname='iowa' user='plasio'
+        </Option>
+		<Option name="type">
+            postgresql
+        </Option>
+		<Option name="cloud_table">
+            IOWA_CLOUD
+        </Option>
+		<Option name="block_table">
+            IOWA_BLOCK
+        </Option>
+		<Option name="cloud_column">
+            CLOUD_ID
+        </Option>
+		<Option name="overwrite">
+            false
+        </Option>
+		<Option name="srid">
+            26915
+        </Option>
+		<Option name="capacity">
+            131072
+        </Option>
+		<Filter type="filters.selector">
+			<Option name="keep">
+				<Options>
+					<Option name="dimension">
+	                    X
+	                </Option>
+					<Option name="dimension">
+	                    Y
+	                </Option>
+					<Option name="dimension">
+	                    Z
+	                </Option>					
+					<Option name="dimension">
+	                    Intensity
+	                </Option>					
+					<Option name="dimension">
+	                    Red
+	                </Option>					
+					<Option name="dimension">
+	                    Green
+	                </Option>					
+					<Option name="dimension">
+	                    Blue
+	                </Option>					
+				</Options>
+			</Option>
+	        <Option name="create">
+	            <Options>
+	                <Option name="dimension">
+	                    Red
+	                    <Options>
+	                        <Option name="type">
+	                            uint8_t
+	                        </Option>
+	                        <Option name="size">
+	                            1
+	                        </Option>
+	                        <Option name="description">
+	                            Red Dimension as 0-255 integer
+	                        </Option>
+	                        <Option name="endianness">
+	                            little
+	                        </Option>
+	                        <Option name="uuid">
+	                            207aa312-884e-456d-9702-2d4f3eab815d
+	                        </Option>
+	                        <Option name="parent_uuid">
+	                            00000000-0000-0000-0000-000000000000
+	                        </Option>
+	                    </Options>
+	                </Option>
+	                <Option name="dimension">
+	                    Green
+	                    <Options>
+	                        <Option name="type">
+	                            uint8_t
+	                        </Option>
+	                        <Option name="size">
+	                            1
+	                        </Option>
+	                        <Option name="description">
+	                            Green Dimension as 0-255 integer
+	                        </Option>
+	                        <Option name="endianness">
+	                            little
+	                        </Option>
+	                        <Option name="uuid">
+	                            6dfabf1a-2668-4fdf-8a2c-55fda0c420d2
+	                        </Option>
+	                        <Option name="parent_uuid">
+	                            00000000-0000-0000-0000-000000000000
+	                        </Option>
+	                    </Options>
+	                </Option>
+	                <Option name="dimension">
+	                    Blue
+	                    <Options>
+	                        <Option name="type">
+	                            uint8_t
+	                        </Option>
+	                        <Option name="size">
+	                            1
+	                        </Option>
+	                        <Option name="description">
+	                            Blue Dimension as 0-255 integer
+	                        </Option>
+	                        <Option name="endianness">
+	                            little
+	                        </Option>
+	                        <Option name="uuid">
+	                            2a7e9981-d275-4456-a8fe-56c0c344642b
+	                        </Option>
+	                        <Option name="parent_uuid">
+	                            00000000-0000-0000-0000-000000000000
+	                        </Option>
+	                    </Options>
+	                </Option>										
+				</Options>
+			</Option>
+			<Filter type="filters.chipper">
+				<Option name="capacity">
+                    131072
+                </Option>
+				<Filter type="filters.cache">
+					<Reader type="drivers.las.reader">
+						<Option name="filename">
+                            /Volumes/lidar4/raw/04204804.laz
+                        </Option>
+						<Option name="spatialreference">
+                            EPSG:26915
+                        </Option>
+					</Reader>
+				</Filter>
+			</Filter>
+		</Filter>
+	</Writer>
+</Pipeline>
