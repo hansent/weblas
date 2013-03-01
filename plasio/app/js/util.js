@@ -1,8 +1,5 @@
 define(function(require){ var self = {};
 
-  var three = require("./lib/three");
- 
-
 
   self.read_file = function(url){
     var req = new XMLHttpRequest();
@@ -12,15 +9,14 @@ define(function(require){ var self = {};
   };
 
 
-  self.GLSLMaterial = function(parameters){
-      var source = self.read_file( parameters.shader ).split("--FRAGMENT SHADER--");
-      delete parameters.shader;
-      parameters.vertexShader = source[0];
-      parameters.fragmentShader = source[1];
-      THREE.ShaderMaterial.call( this, parameters );
-    };
 
-  self.GLSLMaterial.prototype = Object.create(THREE.ShaderMaterial.prototype);
+  self.concat_uint16_arrays = function(first, second){
+      var firstLength = first.length;
+      var result = new Uint16Array(firstLength + second.length);
+      result.set(first);
+      result.set(second, firstLength);
+      return result;
+  };
 
 
 return self;}); 

@@ -1,149 +1,109 @@
 
 define(function(require){
-  var $    = require("jquery");
-  var _th  = require("./lib/three");
-  var _dg  = require("./lib/dat.gui");
+  var $ = require("jquery");
+  var pubsub = require("./lib/pubsub");
+  var three = require("./lib/three");
+  var datgui = require("./lib/dat.gui");
+  var gfx = require("./gfx");
   var util = require("./util");
-  var lasstream = require("./lasstream");
+  var point_stream = require("./point_stream");
 
 
-
-  var texture = THREE.ImageUtils.loadTexture( "img/schema/div_Spectral.png" );
-  texture.minFilter = THREE.LinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-
-  var uniforms = {
-    colortex: { type: "t", value: texture }
+  /*
+   var resize_to_window: function(){
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect	= window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
   };
+  window.addEventListener('resize', on_window_resize, false);
+  */
+  window.APP = window.APP || {};
 
-  material = new util.GLSLMaterial({
-    shader: "glsl/basic.glsl",
-    uniforms: uniforms,
-    depthTest: false, 
-    depthWrite: false,
-    transparent: true ,
-    blending: THREE.AdditiveBlending
-  });
+  APP.init = function(){
+    // DOM Container for Renderer
+    $container = $('#container');
+
+    //Scene
+    APP.scene = new THREE.Scene();
+    
+    //Renderer
+    APP.renderer = new THREE.WebGLRenderer();
+    APP.renderer.setSize(window.innerWidth, window.innerHeight);
+    $container.append(APP.renderer.domElement);
+    
+    //Camera
+    var aspect = window.innerWidth / window.innerHeight;
+    APP.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100000);
+    APP.camera.position.z = 5;
+    APP.scene.add(APP.camera);
+
+    //Light
+    var light = new THREE.PointLight( 0xFFFFFF );
+    light.position.set(10,50,130);
+    APP.scene.add(light);
+
+    //Hookup Controlls and Renderer
+    APP.controls = new THREE.TrackballControls(APP.camera, $container[0]);
 
 
-  var init_point_cloud = function(){
-
-    var geom = new THREE.Geometry();
-    geom.vertices.push(new THREE.Vector3(0,0,0));
-
-    window.point_cloud =  new THREE.ParticleSystem(geom, material);
-    scene.add(point_cloud);
-  };
-
-
-  function add_sphere(){
+    //Point Stream and Point Cloud 
+    APP.point_stream = new point_stream.PointStream("ws://localhost:8080/socket");
+    APP.point_cloud = new gfx.PointCloud();
+    APP.scene.add(APP.point_cloud);
     var sphere = new THREE.Mesh(
       new THREE.SphereGeometry(1.0, 32, 32),
       new THREE.MeshLambertMaterial({color: 0xCC0000})
     );
 
-    scene.add(sphere);
+
+    //App Events
+    pubsub.subscribe("point_stream/update", function(point_stream){
+        //console.log("new data from ", point_stream, point_stream.buffer.length);
+        //APP.point_cloud.update_points(point_stream);
+        
+        
+        var maxx = 0;
+        var MAX_INT = 65535.0;
+        var points = point_stream.buffer;
+        var geom =  new THREE.Geometry();
+        for (var i=0; i<points.length; i=i+3){
+          var x = (points[i+0] / MAX_INT ) ;
+          var y = (points[i+1] / MAX_INT );
+          var z = (points[i+2] / MAX_INT) ;
+          var pt = new THREE.Vector3(x,y,z);
+          //console.log(points[i+0], points[i+0], points[i+0]);
+          //console.log(x,y,z);
+          geom.vertices.push(pt);
+        }
+        var c = point_stream.header.center;
+        var s = -1.0 * point_stream.header.scale_factor;
+        
+        APP.scene.remove(APP.point_cloud);
+        APP.point_cloud = new gfx.PointCloud(geom);
+
+        APP.point_cloud.position.set(c[0]*s, c[1]*s, c[2]*s);
+        APP.scene.add(APP.point_cloud);
+
+        
+        point_stream.send_msg('next_chunk');
+
+    });
+
+
+  };
+
+  APP.render_loop = function() {
+    APP.controls.update(APP.camera);
+    APP.renderer.render( APP.scene, APP.camera );
+    requestAnimationFrame( APP.render_loop );
+  };
+
+
+  APP.start = function (){
+    APP.init();
+    APP.render_loop();
   }
 
-
-  update_point_cloud = function(points){
-    geom =  new THREE.Geometry();
-    var maxx = 0;
-    var MAX_INT = 65535;
-    for (var i=0; i<points.length; i=i+3){
-      var x = (points[i+0] / MAX_INT ) ;
-      var y = (points[i+1] / MAX_INT );
-      var z = (points[i+2] / MAX_INT) ;
-      var pt = new THREE.Vector3(x,y,z);
-      //console.log(points[i+0], points[i+0], points[i+0]);
-      geom.vertices.push(pt);
-    }
-    console.log(maxx);
-    scene.remove(point_cloud);
-    point_cloud = new THREE.ParticleSystem(geom, material)
-    var c = stream_header.center;
-    var s = -1.0*stream_header.scale_factor;
-    point_cloud.position.set(c[0]*s, c[1]*s, c[2]*s);
-    scene.add(point_cloud);
-  }
-
-
-  var callbacks = {
-    resize: function(){
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.aspect	= window.innerWidth/window.innerHeight;
-      camera.updateProjectionMatrix();
-    },
-  };
-
-
-
-
-  var attach_window_event_handlers = function(){
-    window.addEventListener('resize', callbacks.resize, false);
-  };
-
-
-  var init = function(){
-    var WIDTH = window.innerWidth;
-    var HEIGHT = window.innerHeight;
-
-    var VIEW_ANGLE = 45;
-    var ASPECT = WIDTH / HEIGHT;
-    var NEAR = 0.1;
-    var FAR = 100000;
-
-    $container = $('#container');
-
-    //CAMERA
-    window.camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
-    camera.position.z = 10;
-
-    //LIGHT
-    var pointLight = new THREE.PointLight( 0xFFFFFF );
-    pointLight.position.x = 10;
-    pointLight.position.y = 50;
-    pointLight.position.z = 130;
-
-    //SCENE SETUP
-    window.scene = new THREE.Scene();
-    scene.add(camera);
-    scene.add(pointLight);
-    init_point_cloud();
-
-    //SETUP CONTROLS
-    window.controls = new THREE.TrackballControls(camera, $container[0]);
-
-    //SETUP RENDER
-    window.renderer = new THREE.WebGLRenderer();
-    renderer.setSize(WIDTH, HEIGHT);
-
-    //HOOK IT UP TO THE DOM
-    $container.append(renderer.domElement);
-
-    //START STREAMING
-    lasstream.init_stream();
-  };
-
-
-
-  var render_loop = function() {
-    controls.update(camera);
-    renderer.render( scene, camera );
-    requestAnimationFrame( render_loop );
-  };
-
-
-
-  return {
-    start: function(){
-      init();
-      render_loop();
-    }
-  };
-
-
-
+  return APP;
 });
-
 
