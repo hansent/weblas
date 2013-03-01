@@ -15,7 +15,7 @@
 import threading
 import time
 import zmq
-
+import json
 
 
 NBR_WORKERS = 3
@@ -33,7 +33,9 @@ def worker_thread(worker_url, i):
     socket.connect(worker_url)
 
     # Tell the borker we are ready for work
-    socket.send("READY")
+    
+    j = {'status':'READY', 'address':identity }
+    socket.send(json.dumps(j))
 
     try:
         while True:

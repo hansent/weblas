@@ -13,7 +13,7 @@ import zmq
 
 NBR_CLIENTS = 4
 NBR_WORKERS = 3
-
+import json
 
 
 
@@ -67,6 +67,7 @@ def main():
 
             # Queue worker address for LRU routing
             message = backend.recv_multipart()
+            print "backend message: '%s'" % message
 
             assert available_workers < NBR_WORKERS
 
@@ -81,16 +82,17 @@ def main():
             assert empty == ""
 
             # Third frame is READY or else a client reply address
-            client_addr = message[2]
+            j = json.loads(message[2])
+            client_addr = j['address']
+            
+            print 'client_addr: ', client_addr
 
             # If client reply, send rest back to frontend
             if client_addr != "READY":
 
                 # Following frame is empty
-                empty = message[3]
-                assert empty == ""
 
-                reply = message[4]
+                reply = j['status']
 
                 frontend.send_multipart([client_addr, "", reply])
 
