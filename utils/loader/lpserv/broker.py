@@ -66,35 +66,36 @@ def main():
         if (backend in socks and socks[backend] == zmq.POLLIN):
 
             # Queue worker address for LRU routing
-            message = backend.recv_multipart()
-            print "backend message: '%s'" % message
+            print 'backend.recv_multipart(): ', backend.recv_multipart()
+            address, empty, s = backend.recv_multipart()
+            print "backend message: '%s'" % ([address, empty, s])
 
             assert available_workers < NBR_WORKERS
 
-            worker_addr = message[0]
+            worker_addr = address
 
             # add worker back to the list of workers
             available_workers += 1
             workers_list.append(worker_addr)
 
             #   Second frame is empty
-            empty        = message[1]
             assert empty == ""
 
             # Third frame is READY or else a client reply address
-            j = json.loads(message[2])
+            j = json.loads(s)
             client_addr = j['address']
             
             print 'client_addr: ', client_addr
 
             # If client reply, send rest back to frontend
-            if client_addr != "READY":
+            if j['status'] != "READY":
 
                 # Following frame is empty
 
                 reply = j['status']
+                j = {'status':j['status'], 'address':client_addr }
 
-                frontend.send_multipart([client_addr, "", reply])
+                frontend.send_multipart([str(client_addr), "", json.dumps(j)])
 
                 client_nbr -= 1
 
@@ -108,15 +109,19 @@ def main():
                 # Now get next client request, route to LRU worker
                 # Client request is [address][empty][request]
 
-                [client_addr, empty, request ] = frontend.recv_multipart()
+                address, empty, s = frontend.recv_multipart()
 
                 assert empty == ""
 
                 #  Dequeue and drop the next worker address
                 available_workers -= 1
                 worker_id = workers_list.pop()
-
-                backend.send_multipart([worker_id, "", client_addr, "", request])
+                
+                print 's: ', s
+                j = json.loads(s)
+                print 'json: ', j
+                s = json.dumps(j)
+                backend.send_multipart([worker_id, "", address, "", s])
 
 
     #out of infinite loop: do some housekeeping

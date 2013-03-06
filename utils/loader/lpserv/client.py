@@ -38,7 +38,8 @@ def client_thread(client_url, i):
     socket.connect(client_url)
 
     #  Send request, get reply
-    socket.send("HELLO")
+    j = {'status':'HELLO', 'address':identity }
+    socket.send(json.dumps(j))
 
     reply = socket.recv()
 
@@ -51,7 +52,7 @@ def client_thread(client_url, i):
 def main():
     """main method"""
 
-    url_client = "tcp://0.0.0.0:5558" 
+    url_client = "tcp://0.0.0.0:5557" 
 
     for i in range(NBR_CLIENTS):
         thread_c = threading.Thread(target=client_thread, args=(url_client, i, ))

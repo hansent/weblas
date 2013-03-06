@@ -40,11 +40,14 @@ def worker_thread(worker_url, i):
     try:
         while True:
 
-            [address, empty, request] = socket.recv_multipart()
-
-            print("%s: %s\n" %(identity, request))
-
-            socket.send_multipart([address, "", "OK"])
+            address, empty, s = socket.recv_multipart()
+            j = json.loads(s)
+            assert empty == ""
+            print("%s: %s\n" %(identity, j))
+            
+            j['status'] = 'OK'
+            j['address'] = identity
+            socket.send_multipart([address, "", json.dumps(j)])
 
     except zmq.ZMQError, zerr:
         # context terminated so quit silently
