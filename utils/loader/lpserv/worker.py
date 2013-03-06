@@ -16,9 +16,10 @@ import threading
 import time
 import zmq
 import json
+import random
+import sys
 
-
-NBR_WORKERS = 4
+NBR_WORKERS = 1
 
 def worker_thread(worker_url, i):
     """ Worker using REQ socket to do LRU routing """
@@ -47,8 +48,10 @@ def worker_thread(worker_url, i):
             j = json.loads(s)
             assert empty == ""
             print("%s: %s\n" %(identity, j))
-            
-            j['status'] = 'OK'
+            time.sleep (1.1)
+            statuses = ['OK', 'FAILED']
+            status = random.choice(statuses)      
+            j['status'] = status
             # j['address'] = identity
             print 'did work, sending: ', [address, "", json.dumps(j)]
             socket.send_multipart([address, "", json.dumps(j)])
@@ -67,7 +70,9 @@ def main():
     """main method"""
 
     url_worker = "tcp://0.0.0.0:5558"
-
+    
+    if len(sys.argv) > 1:
+        NBR_WORKERS = int(sys.argv[1])
     for i in range(NBR_WORKERS):
         thread = threading.Thread(target=worker_thread, args=(url_worker, i, ))
         thread.start()

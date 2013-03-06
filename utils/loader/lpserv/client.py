@@ -20,7 +20,7 @@ import json
 from zmq.eventloop.ioloop import IOLoop
 from zmq.eventloop.zmqstream import ZMQStream
 
-NBR_CLIENTS = 20
+NBR_CLIENTS = 2
 
 
 def client_thread(client_url, i):
@@ -42,21 +42,42 @@ def client_thread(client_url, i):
     message = json.dumps(j)
     print 'client sending: ', message
     # socket.send_multipart(message)
-    socket.send(message)    
-    while True:
-        reply = socket.recv()
-        time.sleep (0.01)
-        print("%s: %s\n" % (identity, reply))
+    socket.send(message) 
+    
+    try:
+        while True:
+            message =  socket.recv_multipart()
+            print 'received from backend.recv_multipart(): ', message
+            
+            j = json.loads(message[0])
+            if j['status'] == 'FAILED':
+                print 'request failed for %s' % identity
+            time.sleep (0.01)
+            print("%s: %s\n" % (identity, message))
 
-        return
+            return
+
+    except zmq.ZMQError, zerr:
+        # context terminated so quit silently
+        if zerr.strerror == 'Context was terminated':
+            return
+        else:
+            raise zerr
+
+
 
 
 
 def main():
     """main method"""
-
+    
+    import sys
+    
     url_client = "tcp://0.0.0.0:5557" 
 
+    if len(sys.argv) > 1:
+        NBR_CLIENTS = int(sys.argv[1])
+        
     for i in range(NBR_CLIENTS):
         thread_c = threading.Thread(target=client_thread, args=(url_client, i, ))
         thread_c.start()

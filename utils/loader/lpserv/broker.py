@@ -11,8 +11,8 @@ import threading
 import time
 import zmq
 
-NBR_CLIENTS = 20
-NBR_WORKERS = 4
+NBR_CLIENTS = 2
+NBR_WORKERS = 1
 import json
 
 
@@ -84,12 +84,8 @@ def main():
                 j = json.loads(message[4])
                 frontend.send_multipart([s, "", json.dumps(j)])
                 
-            assert available_workers < NBR_WORKERS
-
-            # add worker back to the list of workers
-            available_workers += 1
             
-            if 'Worker' in address and j['status'] in ['READY', 'OK']:
+            if 'Worker' in address and j['status'] in ['READY', 'OK', 'FAILED']:
                 workers_list.append(address)
             elif 'Client' in j['address'] and j['status'] == 'HELLO':
 
@@ -101,11 +97,11 @@ def main():
                 
                 client_nbr -= 1
 
-            assert len(workers_list) == available_workers
+            # assert len(workers_list) == available_workers
             
         # import pdb;pdb.set_trace()
         # poll on frontend only if workers are available
-        if available_workers > 0:
+        if len(workers_list) > 0:
             # import pdb;pdb.set_trace()
             if (frontend in socks and socks[frontend] == zmq.POLLIN):
                 # Now get next client request, route to LRU worker
@@ -118,7 +114,6 @@ def main():
                 assert empty == ""
 
                 #  Dequeue and drop the next worker address
-                available_workers -= 1
                 worker_id = workers_list.pop()
                 
                 j = json.loads(s)
