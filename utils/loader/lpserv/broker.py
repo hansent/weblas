@@ -11,8 +11,8 @@ import threading
 import time
 import zmq
 
-NBR_CLIENTS = 4
-NBR_WORKERS = 1
+NBR_CLIENTS = 20
+NBR_WORKERS = 4
 import json
 
 

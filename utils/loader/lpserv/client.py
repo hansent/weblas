@@ -20,7 +20,7 @@ import json
 from zmq.eventloop.ioloop import IOLoop
 from zmq.eventloop.zmqstream import ZMQStream
 
-NBR_CLIENTS = 4
+NBR_CLIENTS = 20
 
 
 def client_thread(client_url, i):

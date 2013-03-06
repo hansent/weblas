@@ -18,7 +18,7 @@ import zmq
 import json
 
 
-NBR_WORKERS = 1
+NBR_WORKERS = 4
 
 def worker_thread(worker_url, i):
     """ Worker using REQ socket to do LRU routing """
@@ -68,7 +68,7 @@ def main():
 
     url_worker = "tcp://0.0.0.0:5558"
 
-    for i in range(1):
+    for i in range(NBR_WORKERS):
         thread = threading.Thread(target=worker_thread, args=(url_worker, i, ))
         thread.start()
 
