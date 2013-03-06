@@ -18,7 +18,7 @@ import zmq
 import json
 
 
-NBR_WORKERS = 3
+NBR_WORKERS = 1
 
 def worker_thread(worker_url, i):
     """ Worker using REQ socket to do LRU routing """
@@ -39,14 +39,18 @@ def worker_thread(worker_url, i):
 
     try:
         while True:
-
-            address, empty, s = socket.recv_multipart()
+            
+            message = socket.recv_multipart()
+            print 'message: ', message
+            address, empty, s = message[0], message[1], message[2]
+            # import pdb;pdb.set_trace()
             j = json.loads(s)
             assert empty == ""
             print("%s: %s\n" %(identity, j))
             
             j['status'] = 'OK'
-            j['address'] = identity
+            # j['address'] = identity
+            print 'did work, sending: ', [address, "", json.dumps(j)]
             socket.send_multipart([address, "", json.dumps(j)])
 
     except zmq.ZMQError, zerr:
@@ -62,10 +66,9 @@ def worker_thread(worker_url, i):
 def main():
     """main method"""
 
-    # url_worker = "ipc://backend.ipc" #"tcp://*:5557"
-    url_worker = "tcp://0.0.0.0:5557"
+    url_worker = "tcp://0.0.0.0:5558"
 
-    for i in range(NBR_WORKERS):
+    for i in range(1):
         thread = threading.Thread(target=worker_thread, args=(url_worker, i, ))
         thread.start()
 

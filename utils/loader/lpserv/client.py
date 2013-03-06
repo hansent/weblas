@@ -21,7 +21,6 @@ from zmq.eventloop.ioloop import IOLoop
 from zmq.eventloop.zmqstream import ZMQStream
 
 NBR_CLIENTS = 4
-NBR_WORKERS = 3
 
 
 def client_thread(client_url, i):
@@ -39,13 +38,17 @@ def client_thread(client_url, i):
 
     #  Send request, get reply
     j = {'status':'HELLO', 'address':identity }
-    socket.send(json.dumps(j))
+    message = [identity, "", json.dumps(j)]
+    message = json.dumps(j)
+    print 'client sending: ', message
+    # socket.send_multipart(message)
+    socket.send(message)    
+    while True:
+        reply = socket.recv()
+        time.sleep (0.01)
+        print("%s: %s\n" % (identity, reply))
 
-    reply = socket.recv()
-
-    print("%s: %s\n" % (identity, reply))
-
-    return
+        return
 
 
 
