@@ -10,12 +10,15 @@
 import threading
 import time
 import zmq
-
-NBR_CLIENTS = 2
-NBR_WORKERS = 1
+import subprocess
 import json
 
 
+def get_files(directory):
+    l = 'ls %s' % directory
+    process = subprocess.Popen(l.split(), shell=False, stdout=subprocess.PIPE)
+    files = process.communicate()[0].split()
+    
 
 
 
@@ -28,15 +31,6 @@ def main():
     backend = context.socket(zmq.ROUTER)
     backend.bind(url_worker)
 
-
-
-    # Logic of LRU loop
-    # - Poll backend always, frontend only if 1+ worker ready
-    # - If worker replies, queue worker as ready and forward reply
-    # to client if necessary
-    # - If client requests, pop next worker and send request to it
-
-    # Queue of available workers
     workers_list      = []
 
     # init poller
@@ -45,8 +39,9 @@ def main():
     # Always poll for worker activity on backend
     poller.register(backend, zmq.POLLIN)
 
-    files=['file1', 'file4', 'file56','file7' ]
-    files = range(35)
+    DATADIR='/Volumes/lidar4/raw'
+    files = get_files(DATADIR)
+    files=['simple.las']
     while True:
 
         socks = dict(poller.poll())
@@ -78,14 +73,12 @@ def main():
         if len(workers_list) and len(files):
             f = files.pop()
             worker_id = workers_list.pop()
-            j = {'filename': f, 'status':'READY'}
-            print 'sent to worker: ', ["something", "", worker_id, "", json.dumps(j)]
+            j = {'filename': f, 'status':'READY', 'task':'LOAD'}
             backend.send_multipart([worker_id, "", worker_id, "", json.dumps(j)])
-        print workers_list
         
         if len(files) == 0:
             break
-    #out of infinite loop: do some housekeeping
+
     time.sleep (1)
 
     backend.close()
