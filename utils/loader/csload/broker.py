@@ -12,12 +12,13 @@ import time
 import zmq
 import subprocess
 import json
-
+import os
 
 def get_files(directory):
     l = 'ls %s' % directory
     process = subprocess.Popen(l.split(), shell=False, stdout=subprocess.PIPE)
     files = process.communicate()[0].split()
+    return files
     
 
 
@@ -41,7 +42,7 @@ def main():
 
     DATADIR='/Volumes/lidar4/raw'
     files = get_files(DATADIR)
-    files=['simple.las']
+    files=files[0:10]
     while True:
 
         socks = dict(poller.poll())
@@ -73,7 +74,8 @@ def main():
         if len(workers_list) and len(files):
             f = files.pop()
             worker_id = workers_list.pop()
-            j = {'filename': f, 'status':'READY', 'task':'LOAD'}
+            lazfile = os.path.join(DATADIR, f)
+            j = {'filename': lazfile, 'status':'READY', 'task':'LOAD'}
             backend.send_multipart([worker_id, "", worker_id, "", json.dumps(j)])
         
         if len(files) == 0:

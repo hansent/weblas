@@ -22,22 +22,21 @@ import os
 import subprocess
 import tempfile
 
-DATADIR='/Volumes/lidar4/raw'
-XML_TEMPLATE='/Users/hobu/dev/git/weblas/utils/loader/load-postgres.xml'
-PDAL_BIN = '/Users/hobu/dev/git/pdal/bin/'
-DATADIR = '/Users/hobu/dev/git/pdal/test/data'
+# DATADIR='/Volumes/lidar4/raw'
+XML_TEMPLATE='/Users/howardbutler/dev/git/weblas/utils/loader/load-postgres.xml'
+PDAL_BIN = '/Users/howardbutler/dev/git/pdal/bin/'
+# DATADIR = '/Users/howardbutler/dev/git/pdal/test/data'
 
 class LASfileError(Exception):
     pass
 
 class LASfile(object):
     
-    def __init__(self, lazfile, directory=DATADIR):
-        self.directory = directory
-        self.lazfile = os.path.join(self.directory, lazfile)
+    def __init__(self, lazfile):
+        self.lazfile = lazfile
         
-        self.template ='/Users/hobu/dev/git/weblas/utils/loader/load-postgres.xml'
-        PDAL = '/Users/hobu/dev/git/pdal/bin/'
+        self.template ='/Users/howardbutler/dev/git/weblas/utils/loader/load-postgres.xml'
+        PDAL = '/Users/howardbutler/dev/git/pdal/bin/'
         self.PCPIPELINE=os.path.join(PDAL_BIN,'pcpipeline')
         self.PC2PC=os.path.join(PDAL_BIN, 'pc2pc')
         self.PCINFO=os.path.join(PDAL_BIN, 'pcinfo')        
@@ -54,8 +53,11 @@ class LASfile(object):
                                     stderr = subprocess.PIPE,
                                     stdout = subprocess.PIPE)
         output = process.communicate()
-        # print 'output[1]: ', output[1]
-        if output[1]:
+        # print "output[1]: '%s'" % output[1]
+        bad_code="""ERROR 6: EPSG PCS/GCS code 5103 not found in EPSG support files.  Is this a valid
+EPSG coordinate system?
+"""
+        if not (output[1] == '' or output[1] == bad_code):
             raise LASfileError("Unable to verify that '%s' is a LAZ/LAS file" % self.lazfile)
 
         
@@ -76,7 +78,7 @@ class LASfile(object):
     
         lasname = os.path.join(tempfile.gettempdir(), lasname)    
         command = '%s -i %s -o %s' % (self.PC2PC, self.lazfile, lasname)
-        # print command
+        print command
         process = subprocess.Popen( command.split(), 
                                     shell=False, 
                                     stdin=subprocess.PIPE, 
@@ -94,7 +96,7 @@ class LASfile(object):
 
         command = '%s --stdin' % (self.PCPIPELINE)
         
-        # print command
+        print command
 
         process = subprocess.Popen( command.split(), 
                                     shell=False, 
