@@ -78,7 +78,7 @@ EPSG coordinate system?
     
         lasname = os.path.join(tempfile.gettempdir(), lasname)    
         command = '%s -i %s -o %s' % (self.PC2PC, self.lazfile, lasname)
-        print command
+       # print command
         process = subprocess.Popen( command.split(), 
                                     shell=False, 
                                     stdin=subprocess.PIPE, 
@@ -96,7 +96,7 @@ EPSG coordinate system?
 
         command = '%s --stdin' % (self.PCPIPELINE)
         
-        print command
+        #print command
 
         process = subprocess.Popen( command.split(), 
                                     shell=False, 
@@ -107,6 +107,13 @@ EPSG coordinate system?
         
         if d[0]:
             raise LASfileError("Unable to load file with error '%s'" % d[0])
+
+        # delete tempfile
+        try:
+            os.remove(lasname)
+        except OSError:
+            pass
+                
         return d    
 
 def worker_thread(worker_url, logger_url, i):
@@ -144,7 +151,9 @@ def worker_thread(worker_url, logger_url, i):
             try:
                 
                 f = LASfile(j['filename'])
+                print 'loading ', j['filename']
                 f.load()
+                print 'loaded ', j['filename']
                 j['status'] = 'OK'
             except LASfileError, e:
                 j['status'] = 'FAILED'
@@ -179,7 +188,10 @@ def main():
     base_url = "tcp://0.0.0.0:%d" 
     
     broker_url = base_url % broker_port
-    logger_url = base_url % logger_port    
+    logger_url = base_url % logger_port   
+
+    broker_url = 'ipc://worker'
+    logger_url = 'ipc://logger'      
     
     if len(sys.argv) > 1:
         workers = int(sys.argv[1])

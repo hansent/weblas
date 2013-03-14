@@ -26,7 +26,8 @@ def get_files(directory):
 def main():
 
     url_worker = "tcp://0.0.0.0:5558" 
-
+    url_worker = 'ipc://worker'  
+    logger_url = 'ipc://logger'  
     # Prepare our context and sockets
     context = zmq.Context()
     backend = context.socket(zmq.ROUTER)
@@ -42,7 +43,7 @@ def main():
 
     DATADIR='/Volumes/lidar4/raw'
     files = get_files(DATADIR)
-    files=files[0:10]
+    # files=files[0:10]
     while True:
 
         socks = dict(poller.poll())
@@ -58,7 +59,7 @@ def main():
             #   Second frame is empty
             assert empty == ""
 
-            print "backend message: '%s'" % (message)
+            # print "backend message: '%s'" % (message)
             
             
             try:
@@ -68,7 +69,7 @@ def main():
                 
             
             if 'Worker' in address and j['status'] in ['READY', 'OK', 'FAILED']:
-                print 'appending worker:' ,address
+                # print 'appending worker:' ,address
                 workers_list.append(address)
         
         if len(workers_list) and len(files):

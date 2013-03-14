@@ -41,11 +41,12 @@ if __name__=='__main__':
 
     logger_port = 5559
     workers = 1
-    if len(sys.argv) > 1:
-        logger_port = sys.argv[1]
-        
-    logger_url = "tcp://0.0.0.0:%d" % logger_port
+    # if len(sys.argv) > 1:
+    #     logger_port = sys.argv[1]
+    #     
+    # logger_url = "tcp://0.0.0.0:%d" % logger_port
 
+    logger_url = 'ipc://logger'  
     # Socket to receive messages on
     receiver = context.socket(zmq.PULL)
     receiver.bind(logger_url)
