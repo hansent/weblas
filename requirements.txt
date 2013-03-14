@@ -4,3 +4,4 @@ scipy
 PIL
 tornado
 psycopg2
+pyzmq
