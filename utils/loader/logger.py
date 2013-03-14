@@ -9,6 +9,7 @@ import time
 import zmq
 import psycopg2
 import json
+import copy
 
 def create_log_table(connection, tablename):
 
@@ -22,9 +23,14 @@ def create_log_table(connection, tablename):
 def log_data(connection, tablename, j):
     cur = connection.cursor()
 
-    insert = "INSERT INTO %s (FILENAME, SUCCESS, ERROR) values ('%s', '%s', '%s')" % (table_name, j['filename'], j['success'], j['error'])
-    cur.execute(insert)
+    data = copy.copy(j)
+    data['error'] = repr(data['error'])
+    insert = 'INSERT INTO %s (FILENAME, SUCCESS, ERROR) values ' % tablename
+    query = insert + "(%(filename)s, %(success)s, %(error)s)" 
+
+    cur.execute(query, data)
     connection.commit()
+
     
 if __name__=='__main__':
     table_name = 'log'
@@ -33,20 +39,29 @@ if __name__=='__main__':
 
     context = zmq.Context()
 
+    logger_port = 5559
+    workers = 1
+    # if len(sys.argv) > 1:
+    #     logger_port = sys.argv[1]
+    #     
+    # logger_url = "tcp://0.0.0.0:%d" % logger_port
+
+    logger_url = 'ipc://logger'  
     # Socket to receive messages on
     receiver = context.socket(zmq.PULL)
-    receiver.bind("tcp://*:5558")
+    receiver.bind(logger_url)
 
 
     while True:
-        s = receiver.recv()
+        message =  receiver.recv_multipart()
+        # print 'received from backend.recv_multipart(): ', message
+        address, empty, s = message[0], message[1], message[2]
+
         
         j = json.loads(s)
         
-        if 'status' in j.keys():
-            print j
-            if j['status'] == 'end':
-                break
-            continue
-        log_data(connection, table_name,  j)
+        if j['status'] == 'END':
+            break
 
+        log_data(connection, table_name,  j)
+        continue
