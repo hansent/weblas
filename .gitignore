@@ -4,3 +4,5 @@ build/
 plasio/app/data/*.las
 *DS_Store
 postgres
+utils/*.png
+static/*.las
