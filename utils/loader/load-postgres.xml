@@ -2,7 +2,7 @@
 <Pipeline version="1.0">
 	<Writer type="drivers.soci.writer">
 		<Option name="connection">
-			dbname='iowa' user='plasio'
+            host='localhost' dbname='iowa' user='plasio'
         </Option>
 		<Option name="type">
             postgresql
