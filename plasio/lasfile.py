@@ -11,7 +11,7 @@ class LASFile(pointcloud.PointCloud):
         self.chunk_size = kwargs.get('chunk_size', 10000)
         self.offset = 0
 
-        self.f = f = laspy.file.File(self.filename)
+        self.f = laspy.file.File(self.filename)
 
 
         self.normalize()
