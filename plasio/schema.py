@@ -1,4 +1,4 @@
-
+import numpy as np
 
 
 class Dimension(object):
@@ -44,8 +44,13 @@ class Schema(object):
         return self.dimensions[name]
 
     def append(self, dimension):
-        if self.dimensions.has_key(dimension.name):
-            raise Exception("Dimension with name '%s' already exists on this schema!" % dimension.name)
+        dim_name = dimension.name
+        i = 0
+        while self.dimensions.has_key(dimension.name):
+            dimension.name = "%s_%d" % (dim_name, i)
+            dtype_name = dimension.np_fmt.fields[dim_name][0]
+            dimension.np_fmt = np.dtype([(dimension.name, dtype_name)])
+            i +=1
         self.dimensions[dimension.name] = dimension
 
     def remove(self, name):

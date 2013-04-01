@@ -36,7 +36,8 @@ class PostGIS(pointcloud.PointCloud):
 
     def get_bounds(self):
         cur = self.connection.cursor()
-        b = 'select box3d(st_union(extent)) from %s' % self.block_table
+        #all of iowa
+        b = 'select box3d(st_extent(extent)) from %s' % self.cloud_table
         cur.execute(b)
 
         b = cur.fetchone()[0]
@@ -82,6 +83,7 @@ class PostGIS(pointcloud.PointCloud):
         root = ET.fromstring(xml)
         s = schema.Schema()
 
+
         i = 0
         for child in root.getchildren():
             dim = Dimension(child)
@@ -91,15 +93,12 @@ class PostGIS(pointcloud.PointCloud):
             dim.np_fmt = np.dtype(t)
             s.append(dim)
             i = i + 1
-
         return s;
 
 
-
     def __iter__(self):
-
         cursor = self.connection.cursor()
-        query = 'SELECT NUM_POINTS, POINTS from %s where cloud_id = %d ' % (self.block_table, self.cloud_id)
+        query = 'SELECT NUM_POINTS, POINTS from %s where cloud_id = %d' % (self.block_table, self.cloud_id)
         cursor.execute(query)
 
         rows = cursor.fetchmany(self.rowcount)
@@ -108,9 +107,12 @@ class PostGIS(pointcloud.PointCloud):
         x_ind = self.schema['X'].index
         y_ind = self.schema['Y'].index
         z_ind = self.schema['Z'].index
+
+        row_num = 0
         while rows:
 
             for row in rows:
+                row_num += 1
                 blob = row[1]
                 data = np.frombuffer(blob, dtype=self.schema.np_fmt)
                 vx = np.array([i[x_ind] for i in data])
@@ -119,27 +121,56 @@ class PostGIS(pointcloud.PointCloud):
                 points = np.vstack((vx, vy, vz)).transpose()
 
                 # pluck out unique x,y,z tuples
-                output = np.vstack([np.array(u) for u in set([tuple(p) for p in points])])
-                yield output
+                #output = np.vstack([np.array(u) for u in set([tuple(p) for p in points])])
+                yield points #output
 
             rows = cursor.fetchmany(self.rowcount)
 
 
+
+    def splat_cloud(self, cloud_id, img_size):
+        #select box3d for cloud
+        b = 'select box3d(st_extent(extent)) from %s where cloud_id = %s' % (self.cloud_table, self.cloud_id)
+
+        #query for blocks in cloud id
+        #cursor = self.connection.cursor()
+        #query = 'SELECT NUM_POINTS, POINTS from %s where cloud_id = %d' % (self.block_table, self.cloud_id)
+        #cursor.execute(query)
+
+
+        #for each blcosk, splat into image
+
+
+
+
+
+def splat_cloud(cloud_id, img_size):
+
+        cur.execute(b)
+
+        b = cur.fetchone()[0]
+        b = b.replace('BOX3D(','')
+        b = b.replace(')', '')
+
+        b = b.split(',')
+        minx, miny, minz = b[0].split()
+        maxx, maxy, maxz = b[1].split()
+        # print minx, miny, minz, maxx, maxy, maxz
+        return bounds.Bounds(*tuple(float(x) for x in (minx, miny, minz, maxx, maxy, maxz)))
+
+
+
+
+
+
 if __name__ == '__main__':
-    postgis_connection = "dbname=lidar host=localhost"
-    cloud_table = 'sthelens_cloud'
-    cloud_id = 1
+    postgis_connection = "dbname=iowa user=plasio"
+    cloud_table = 'iowa_cloud'
+    cloud_id = 5331
     p = PostGIS(postgis_connection, cloud_table, cloud_id)
 
-    print p.bounds
     byte_size = sum([int(i.size) for i in p.schema])
-    print byte_size
-    print p.schema
 
-    print len(p)
-
-
-    print p.offsets, p.scales
     output = None
     for block in p:
         if output == None:
@@ -147,5 +178,9 @@ if __name__ == '__main__':
         else:
             output = np.vstack((output, block))
 
-    print 'shape: ', output.shape
+    print len(output), output.shape
+
+
+
+
 
